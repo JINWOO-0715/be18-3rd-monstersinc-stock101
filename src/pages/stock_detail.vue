@@ -1,24 +1,12 @@
 <template>
   <section class="page">
-
-    <!-- 상단: 종목 요약 카드 -->
+    <!-- 1. 상단: 기본 정보 영역 -->
     <header class="hero">
       <div class="hero-card">
         <div class="hero-main">
-          <div v-if="metaPills.length" class="hero-tags">
-            <Pill
-              v-for="meta in metaPills"
-              :key="meta.key"
-              :text="meta.text"
-              :variant="meta.variant"
-              size="sm"
-              tone="soft"
-              class="hero-pill"
-            />
-          </div>
-          <h1 class="hero-title">{{ tickerDisplay }}</h1>
-          <p class="hero-company">{{ companyDisplay }}</p>
-          <p v-if="headerDescription" class="hero-desc">{{ headerDescription }}</p>
+          <h1 v-if="stockInfo?.name" class="hero-title">{{  stockInfo.name}}
+            <span v-if="stockInfo?.stockCode" class="ticker-code">({{ stockInfo?.stockCode }})</span>
+          </h1>
 
           <div v-if="indicatorPills.length" class="hero-indicators">
             <div v-for="indicator in indicatorPills" :key="indicator.key" class="indicator-item">
@@ -27,683 +15,478 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="hero-price">
-          <span class="price-caption">현재가</span>
-          <span class="price-value">{{ priceNowText }}</span>
-          <span v-if="deltaText" :class="['price-delta', 'delta', deltaClass]">{{ deltaText }}</span>
+      <!-- 상단 정보 확장: 차트 -->
+      <div class="hero-extended">
+        <div class="hero-chart">
+          <StockDailyChart :stockCode="stockInfo?.stockCode" :stockName="stockInfo?.name" />
         </div>
       </div>
     </header>
 
-    <!-- 투자 나침반(게이지 3개) -->
-    <section class="sec">
-      <h2 class="sec-title">{{ tickerDisplay }}의 투자 나침반</h2>
-      <div class="gauges">
-        <div v-for="gauge in gaugeConfigs" :key="gauge.key" class="gauge-block">
-          <div class="gauge-header">
-            <h3 class="gauge-title">{{ gauge.title }}</h3>
-            <Pill
-              :text="gauge.state"
-              :variant="gauge.stateVariant"
-              tone="outline"
-              size="sm"
-            />
-          </div>
-          <div class="gauge-body">
-            <div class="gauge-chart">
-              <SentimentGauge
-                :value="gauge.value"
-                :size="gauge.size"
-                :segments="gaugeColorSegments"
-                :band-labels="gauge.bandLabels ?? bandLabels"
-                :label-distance="gauge.labelDistance"
-                :thickness="gauge.thickness"
-                :radius="gauge.radius"
-                :labels-outside="gauge.labelsOutside"
-              />
-            </div>
-          </div>
-          <p v-if="gauge.updateText" class="gauge-update">{{ gauge.updateText }}</p>
+    <!-- 탭 네비게이션 -->
+    <nav class="tab-nav">
+      <button 
+        :class="['tab-btn', { active: activeTab === 'analysis' }]" 
+        @click="activeTab = 'analysis'"
+      >
+        📚 AI 정밀 분석
+      </button>
+      <button 
+        :class="['tab-btn', { active: activeTab === 'disclosure' }]" 
+        @click="activeTab = 'disclosure'"
+      >
+        📋 최근 공시
+      </button>
+      <button 
+        :class="['tab-btn', { active: activeTab === 'discussion' }]" 
+        @click="activeTab = 'discussion'"
+      >
+        💬 투자자 토론
+      </button>
+    </nav>
+
+    <!-- 탭 콘텐츠: AI 정밀 분석 -->
+    <template v-if="activeTab === 'analysis'">
+      <section class="analysis-grid">
+        <div class="analysis-grid__left">
+          <PdfAnalysisDashboard :stockId="Number(stockId)" @uploaded="url => uploadedPdfUrl = url" />
         </div>
-      </div>
-    </section>
+        <div class="analysis-grid__right">
+          <div class="related-reports">
+            <h3 class="related-reports__title">관련 리포트</h3>
+            <div v-if="topThreeReports.length > 0" class="report-list">
+              <article
+                v-for="report in topThreeReports"
+                :key="report.id"
+                class="report-card"
+                @click="$router.push(`/report/${report.id}`)"
+              >
+                <h4 class="report-card__title">{{ report.title }}</h4>
+                <p class="report-card__summary">{{ report.content }}</p>
+                <div class="report-card__meta">
+                  <span>{{ report.date }}</span>
+                  <span v-if="report.investment_grade" class="report-grade" :class="`grade-${report.investment_grade}`">
+                    {{ report.investment_grade }}
+                  </span>
+                </div>
+              </article>
+            </div>
+            <p v-else class="empty-text">관련 리포트가 없습니다.</p>
+          </div>
+        </div>
+      </section>
+    </template>
 
-    <!-- 재무 지표 -->
-    <section class="sec">
-      <h2 class="sec-title">{{ tickerDisplay }}의 재무 지표</h2>
-      <div class="metrics-grid">
-        <BaseGrid :items="metrics" :cols="4" gap="15px" itemKey="key">
-          <template #default="{ item }">
-            <MetricCard
-              :title="item.title"
-              :subtitle="item.subtitle"
-              :value="item.value"
-              :badgeText="item.badgeText"
-              :badgeVariant="item.variant"
-              pad="lg"
-            />
-          </template>
-        </BaseGrid>
-      </div>
-    </section>
+    <!-- 탭 콘텐츠: 최근 공시 -->
+    <template v-else-if="activeTab === 'disclosure'">
+      <section class="sec">
+        <h2 class="sec-title">최근 공시 (DART)</h2>
+        <div v-if="disclosuresList.count > 0" class="disclosure-table-wrap">
+          <table class="disclosure-table">
+            <thead>
+              <tr>
+                <th>접수일</th>
+                <th>보고서명</th>
+                <th>회사명</th>
+                <th>공시유형</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in disclosuresList.disclosures" :key="item.rceptNo || item.rceptNo" class="disclosure-row">
+                <td class="disclosure-date">
+                  <div>{{ formatDateFromBackend(item.receptionDate) }}</div>
+                  <div class="disclosure-time"></div>
+                </td>
+                <td class="disclosure-report">
+                  <a :href="`https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${item.rceptNo}`" 
+                     target="_blank" 
+                     class="disclosure-link">
+                    {{ item.reportName }}
+                  </a>
+                </td>
+                <td class="disclosure-submitter">{{ item.corpName }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-else class="empty-text">최근 30일 내 공시가 없습니다.</p>
+      </section>
+    </template>
 
-    <!--차트 및 주가 예측-->
-    <section class="sec">
-      <Chart :ticker="tickerDisplay"/>
-      <div class="cta-row">
-        <BaseButton class="cta neg" :class="{ 'cta-locked': !isLoggedIn }" @click="prediction(false)">
-          <span class="cta-content">
-            <span class="cta-icon" aria-hidden="true">▼</span>
-            <span class="cta-text">
-              <span class="cta-title">주가가 내려갈 거예요</span>
-              <span class="cta-sub">하락 예상 시 기록하고 추이를 추적해요</span>
-            </span>
-          </span>
-        </BaseButton>
-        <BaseButton class="cta pos" :class="{ 'cta-locked': !isLoggedIn }" @click="prediction(true)">
-          <span class="cta-content">
-            <span class="cta-icon" aria-hidden="true">▲</span>
-            <span class="cta-text">
-              <span class="cta-title">주가가 올라갈 거예요</span>
-              <span class="cta-sub">상승 신호를 느꼈다면 지금 남겨보세요</span>
-            </span>
-          </span>
-        </BaseButton>
-      </div>
-      <p class="hint" :class="{ disabled: !isLoggedIn }">
-        {{ isLoggedIn ? '[등록하면 주가를 이메일로 보내요]' : '로그인 후 이용 가능한 기능입니다.' }}
-      </p>
-    </section>
-
-    <!-- 커뮤니티 대화 -->
-    <section class="sec">
-      <h2 class="sec-title">{{ tickerDisplay }}의 커뮤니티 대화</h2>
-      <div class="community-wrapper">
-        <CommunityFeed :stockId="Number(stockId)" :embedded="true" />
-      </div>
-    </section>
+    <!-- 탭 콘텐츠: 투자자 토론 -->
+    <template v-else-if="activeTab === 'discussion'">
+      <section class="discussion-container">
+        <!-- 기존 피드 임시 배치 (이후 고도화 예정) -->
+        <div class="community-wrapper-full">
+          <CommunityFeed :stockId="Number(stockId)" :embedded="true" />
+        </div>
+      </section>
+    </template>
   </section>
-  </template>
-<script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
-
-import BaseGrid from '@/components/grid/BaseGrid.vue'
-import MetricCard from '@/components/card/variants/MetricCard.vue'
-import SentimentGauge from '@/components/chart/variants/GaugeChart.vue'
 import Pill from '@/components/ui/Pill.vue'
-import Chart from '@/components/chart/Chart.vue'
+import StockDailyChart from '@/components/chart/StockDailyChart.vue'
 import CommunityFeed from '@/views/CommunityFeedView.vue'
+import PdfAnalysisDashboard from '@/components/pdf/PdfAnalysisDashboard.vue'
+// PdfViewer removed; replaced by related reports mock in template
+import { getStockSummaryInfo } from '@/api/stockSerivce'
+import { DartReportgetDartReports } from '@/api/dartService'
+import { getReportsByStockId, type ReportsResponse } from '@/api/reportService'
+
+import type {StockPriceResponse,DailyPrice,StockSummaryInfo} from '@/types/stock'
+import type {DartReportResponse,DartReport} from '@/types/dart'
 
 
 const route = useRoute()
-const router = useRouter()
 const stockId = ref(route.params.stockId ?? '')
-const stockInfo = ref(null)
-const priceValue = ref(null)
-const changeValue = ref(null)
+const activeTab = ref('analysis')
+const stockInfo = ref<StockSummaryInfo | null>(null)
+const uploadedPdfUrl = ref(null)
+const disclosuresList = ref<DartReportResponse | null>(null)
+const individualData = ref(null)
+const analystData = ref(null)
+const relatedReports = ref<ReportsResponse | null>(null)
 
-const tickerDisplay = computed(() => stockInfo.value?.stockCode ?? stockInfo.value?.symbol ?? stockInfo.value?.ticker ?? '—')
-const companyDisplay = computed(() => stockInfo.value?.name ?? '—')
+// 관련 리포트 상위 3개만
+const topThreeReports = computed(() => {
+  if (!relatedReports.value || !relatedReports.value.items) return []
+  return relatedReports.value.items.slice(0, 3)
+})
+
+// -----------------------------------------FUNCTIONS--------------------------------------------------
+
+onMounted(async () => {
+  const id = Array.isArray(stockId.value) ? stockId.value[0] : stockId.value;
+  if (!id) return;
+  try{
+    stockInfo.value = await getStockSummaryInfo(id);
+
+  // 2. stockInfo 로드 후, 해당 정보를 사용하는 API들을 병렬로 호출
+    if (stockInfo.value && stockInfo.value.stockCode) {
+      const [disclosures, reports] = await Promise.all([
+        DartReportgetDartReports(stockInfo.value.stockCode), // 공시 정보
+        getReportsByStockId(id) // 관련 리포트
+      ]);
+
+      // 3. 결과값을 각각의 ref 변수에 할당
+      disclosuresList.value = disclosures;
+      relatedReports.value = reports;
+    }
+  } catch (error) {
+    console.error('❌ Failed to load stock', error)
+  }
+  
+});
+
+
+
 const readStoredToken = () => {
   const raw = localStorage.getItem('AuthToken') ?? localStorage.getItem('authToken') ?? ''
-  const token = typeof raw === 'string' ? raw.trim() : ''
-  if (!token || token === 'null' || token === 'undefined') return ''
-  return token
+  return typeof raw === 'string' ? raw.trim() : ''
 }
 
 const authToken = ref(readStoredToken())
-const syncToken = () => {
-  authToken.value = readStoredToken()
-}
 const isLoggedIn = computed(() => authToken.value.length > 0)
 
-const formatCurrency = (value) => {
-  const num = Number(value)
-  if (!Number.isFinite(num)) return '—'
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num)
+
+const formatDateFromBackend = (dateStr) => {
+  if (!dateStr) return '—'
+  // ISO 형식(YYYY-MM-DD) 또는 LocalDate를 YYYY.MM.DD로 변환
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return dateStr
+  
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}.${month}.${day}`
 }
 
-const priceNowText = computed(() => formatCurrency(priceValue.value))
-
-const deltaText = computed(() => {
-  if (!Number.isFinite(changeValue.value)) return ''
-  const pct = changeValue.value
-  const sign = pct > 0 ? '+' : pct < 0 ? '-' : ''
-  const value = Math.abs(pct).toFixed(2)
-  return `${sign}${value}%`
-})
-
-const deltaClass = computed(() => {
-  if (!Number.isFinite(changeValue.value)) return 'flat'
-  if (changeValue.value > 0) return 'pos'
-  if (changeValue.value < 0) return 'neg'
-  return 'flat'
-})
-
-const indicatorMap = {
-  STRONG_BUY: { variant: 'success', label: 'Strong Buy' },
-  BUY: { variant: 'success', label: 'Buy' },
-  HOLD: { variant: 'warning', label: 'Hold' },
-  SELL: { variant: 'danger', label: 'Sell' },
-  STRONG_SELL: { variant: 'danger', label: 'Strong Sell' },
-  POSITIVE: { variant: 'success', label: 'Positive' },
-  NEGATIVE: { variant: 'danger', label: 'Negative' },
-  NEUTRAL: { variant: 'warning', label: 'Neutral' },
+const getReportTypeLabel = (reportType) => {
+  const typeMap = {
+    'A': '정기공시',
+    'B': '주요사항보고',
+    'C': '발행공시',
+    'D': '지분공시',
+    'E': '기타공시',
+    'F': '외부감사',
+    'G': '펀드공시',
+    'H': '자산유동화',
+    'mo': '거래소공시',
+    'J': '공정위공시'
+  }
+  return typeMap[reportType] || reportType || '—'
 }
 
-const indicatorPills = computed(() => {
-  if (!stockInfo.value) return []
-  const entries = [
-    { key: 'individualIndicator', title: '개미 시그널' },
-    { key: 'analystIndicator', title: '애널리스트' },
-    { key: 'newsIndicator', title: '뉴스' },
-  ]
-  return entries
-    .map(({ key, title }) => {
-      const raw = stockInfo.value?.[key]
-      if (!raw) return null
-      const mapped = indicatorMap[raw] ?? {}
-      return {
-        key,
-        title,
-        text: mapped.label ?? raw,
-        variant: mapped.variant ?? 'info',
-      }
-    })
-    .filter(Boolean)
-})
-
-const metaPills = computed(() => {
-  if (!stockInfo.value) return []
-  const items = []
-  if (tickerDisplay.value && tickerDisplay.value !== '—') items.push({ key: 'ticker', text: tickerDisplay.value, variant: 'info' })
-  if (stockInfo.value.industryName) items.push({ key: 'industry', text: stockInfo.value.industryName, variant: 'neutral' })
-  if (stockInfo.value.sectorName) items.push({ key: 'sector', text: stockInfo.value.sectorName, variant: 'neutral' })
-  return items
-})
-
-const headerDescription = computed(() => {
-  if (!stockInfo.value) return ''
-  const parts = [stockInfo.value.industryName, stockInfo.value.sectorName].filter(Boolean)
-  return parts.join(' · ')
-})
-
-/* 게이지 데모 값 */
-const sentiment = ref(0)
-const miniLeft = ref(0)
-const miniRight = ref(0)
-
-const bandLabels = ['Strong Sell', 'Sell', 'Hold', 'Buy', 'Strong Buy']
-
-const gaugeColorSegments = [
-  [0.2, '#ef4444'],
-  [0.4, '#f97316'],
-  [0.6, '#facc15'],
-  [0.8, '#22c55e'],
-  [1.0, '#16a34a'],
-]
-const gaugeStateText = (value) =>
-  value > 80 ? 'Strong Buy'
-    : value > 60 ? 'Buy'
-    : value > 40 ? 'Hold'
-    : value > 20 ? 'Sell'
-    : 'Strong Sell'
-
-const gaugeStateVariant = (state) => {
-  if (state.includes('Strong Buy')) return 'success'
-  if (state === 'Buy') return 'success'
-  if (state === 'Hold') return 'warning'
-  if (state.includes('Sell')) return 'danger'
-  return 'neutral'
+const getReportTypeClass = (reportType) => {
+  // reportType을 CSS 클래스명으로 변환
+  const classMap = {
+    'A': 'Y',  // 정기공시 → 유가증권 스타일
+    'B': 'K',  // 주요사항보고 → 코스닥 스타일
+    'C': 'N',  // 발행공시 → 코넥스 스타일
+  }
+  return classMap[reportType] || 'E'
 }
 
-const gaugeConfigs = computed(() => {
-  const configs = [
-    { key: 'mood', title: '분석가 지표', value: miniLeft.value, size: 360, labelDistance: 46, thickness: 24, radius: '85%', labelsOutside: true },
-    {
-      key: 'retail',
-      title: '개미 지표',
-      value: sentiment.value,
-      size: 420,
-      labelDistance: 50,
-      thickness: 24,
-      radius: '82%',
-      labelsOutside: true,
-      bandLabels: ['Strong Sell', 'Sell', '·', 'Buy', 'Strong Buy']
-    },
-    { key: 'news', title: '뉴스 지표', value: miniRight.value, size: 360, labelDistance: 46, thickness: 24, radius: '85%', labelsOutside: true },
-  ]
 
-  return configs.map((config) => {
-    const state = gaugeStateText(config.value)
-    return {
-      ...config,
-      state,
-      stateVariant: gaugeStateVariant(state),
-    }
-  })
-})
 
-/* 재무 지표 카드 데이터 */
-const metrics = ref([
-  { key: 'per1', title: 'PER', subtitle: 'Price-to-Earnings Ratio', value: 4.2, badgeText: 'neutral', variant: 'neutral' },
-  { key: 'per2', title: 'PER', subtitle: 'Price-to-Earnings Ratio', value: 4.2, badgeText: 'poor',    variant: 'danger'  },
-  { key: 'ebs',  title: 'EBS', subtitle: 'Earnings Before Split',   value: 4.2, badgeText: 'good',    variant: 'success' },
-])
-const loadprice = async () =>{
-  await axios.get('/api/v1/rest-client/getStockPrice')
-}
 
-const loadStock = async (id) => {
+const indicatorPills = computed(() => []) // To be implemented with original logic if needed
+
+
+
+
+
+const getIndicators = async (id) => {
   if (!id) return
   try {
-    const { data } = await axios.get(`/api/v1/stock/${id}`)
-    const items = Array.isArray(data?.items) ? data.items : []
-    const stock = items[0]
-    if (!stock) return
-
-    stockInfo.value = stock
-    priceValue.value = Number(stock.price)
-    changeValue.value = Number(stock.fluctuation)
+    const [indRes, anaRes] = await Promise.all([
+      axios.get(`/api/v1/indicator-service/individual-indicator?stockId=${id}`),
+      axios.get(`/api/v1/indicator-service/analyst-indicator?stockId=${id}`)
+    ])
+    individualData.value = indRes.data?.items?.[0] || indRes.data?.item
+    analystData.value = anaRes.data?.items?.[0] || anaRes.data?.item
   } catch (error) {
-    console.error('주식 데이터를 불러오지 못했습니다.', error)
-  }
-}
-const getindicator = async (id) =>{
-  if (!id) return
-  try {
-    const { data } = await axios.get(`/api/v1/indicator-service/news-indicator?stockId=${id}`)
-    const items = Array.isArray(data?.items) ? data.items : []
-    const ni = items[0]
-    if (!ni) return
-    let newsval =  ((ni.negativeCount * 0 ) + (ni.neutralCount * 50 ) + (ni.positiveCount * 100 ))/(ni.negativeCount + ni.neutralCount + ni.positiveCount)
-    miniRight.value = Number(newsval)
-    console.log(miniRight.value)
-  } catch (error) {
-    console.error('주식 데이터를 불러오지 못했습니다.', error)
-  }
-  try {
-    const { data } = await axios.get(`/api/v1/indicator-service/individual-indicator?stockId=${id}`)
-    const items = Array.isArray(data?.items) ? data.items : []
-    const ii = items[0]
-    if (!ii) return
-    let indivval =  ((ii.strongBuy * 100 ) + (ii.buy * 75 ) + (ii.hold * 50 ) + (ii.sell * 25 ) + (ii.strongSell * 0 ))/(ii.strongBuy + ii.buy + ii.hold + ii.sell + ii.strongSell)
-    sentiment.value = Number(indivval)
-    console.log(sentiment.value)
-  } catch (error) {
-    console.error('주식 데이터를 불러오지 못했습니다.', error)
-  }
-  miniLeft.value = (miniRight.value + sentiment.value)/2
-  console.log(miniLeft.value)
-}
-function mapFinancialToMetrics(fin) {
-  return [
-    {
-      key: 'eps',
-      title: 'EPS',
-      subtitle: 'Earnings Per Share',
-      value: fin.eps,
-      badgeText: fin.eps > 0 ? 'good' : 'poor',
-      variant: fin.eps > 0 ? 'success' : 'danger'
-    },
-    {
-      key: 'bps',
-      title: 'BPS',
-      subtitle: 'Book Value Per Share',
-      value: fin.bps,
-      badgeText: 'neutral',
-      variant: 'neutral'
-    },
-    {
-      key: 'roe',
-      title: 'ROE',
-      subtitle: 'Return on Equity',
-      value: fin.roe,
-      badgeText: fin.roe > 1 ? 'good' : 'poor',
-      variant: fin.roe > 1 ? 'success' : 'danger'
-    },
-    {
-      key: 'roa',
-      title: 'ROA',
-      subtitle: 'Return on Assets',
-      value: fin.roa,
-      badgeText: fin.roa > 0.5 ? 'good' : 'poor',
-      variant: fin.roa > 0.5 ? 'success' : 'danger'
-    }
-  ]
-}
-const getfinance = async(id) =>{
-  if (!id) return
-  try {
-    const { data } = await axios.get(`/api/v1/indicator-service/financial-indicator?stockId=${id}`)
-    const items = Array.isArray(data?.items) ? data.items : []
-    const fi = items[0]
-    if (!fi) return
-    metrics.value = mapFinancialToMetrics(fi)
-    console.log(metrics.value)
-  } catch (error) {
-    console.error('주식 데이터를 불러오지 못했습니다.', error)
-  }
-}
-const buildPredictionPayload = (isBullish) => ({
-  stockId: stockId.value,
-  userId: localStorage.getItem("userId"),
-  ticker: tickerDisplay.value,
-  prediction: isBullish ? 'UP' : 'DOWN',
-  // TODO: confidence, memo, userId 등을 서버 스펙에 맞게 채워주세요.
-  predicted_at: new Date().toISOString()
-})
-
-const prediction = async (isBullish) => {
-  if (!isLoggedIn.value) {
-    alert('로그인 후 이용해 주세요.')
-    router.push({path: "/auth/login?type=login"})
-    return
-  }
-  if (!stockId.value || !tickerDisplay.value || tickerDisplay.value === '—') {
-    console.warn('예측을 등록할 종목 정보를 확인할 수 없습니다.')
-    return
-  }
-
-  const payload = buildPredictionPayload(isBullish)
-
-  try {
-    await axios.post('/api/v1/prediction/create', payload,{
-      headers: {
-        Authorization: `Bearer ${authToken.value}`
-        // TODO: 필요 시 Content-Type 등 추가 헤더를 정의하세요.
-      }
-    })
-    console.log("등록 완료")
-    alert("등록 완료")
-  } catch (error) {
-    console.error('예측을 등록하지 못했습니다.', error)
-    alert('오류가 발생하였습니다')
+    // Silent error
   }
 }
 
-onMounted(() => {
-  syncToken()
-  window.addEventListener('storage', syncToken)
 
-  loadprice()
-  loadStock(stockId.value)
-  getindicator(stockId.value)
-  getfinance(stockId.value)
-})
 
-onUnmounted(() => {
-  window.removeEventListener('storage', syncToken)
-})
-
-watch(
-  () => route.params.stockId,
-  (next) => {
-    if (typeof next === 'undefined') return
+watch(() => route.params.stockId, async (next) => {
+  if (next) {
     stockId.value = next
-    loadStock(next)
+    await loadStock(next)
+    await Promise.all([
+      getfinance(next),
+      getIndicators(next),
+      loadDartDisclosures(next)
+    ])
   }
-)
+})
 </script>
 
 <style scoped>
-.page{
-  display:grid;
-  gap:28px;
-  padding:42px;
-  max-width:1020px;
-  width:100%;
-  margin:0 auto;
-  background:#f8fafc;
-  border-radius:24px;
-  box-sizing:border-box;
-}
+.page { display: flex; flex-direction: column; gap: 28px; padding: 32px; max-width: 1400px; margin: 0 auto; background: var(--bg); min-height: 100vh; }
 
-.hero{ display:flex; }
-.hero-card{
-  display:flex; justify-content:space-between; align-items:flex-start; gap:32px;
-  width:100%; padding:32px; border-radius:30px;
-  background:linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(14,165,233,0.18) 50%, rgba(236,72,153,0.16) 100%);
-  border:1px solid rgba(148,163,184,0.18);
-  box-shadow:0 28px 50px rgba(15,23,42,0.18);
-  position:relative; overflow:hidden;
-}
+/* 공통 섹션 스타일 */
+.sec { display: flex; flex-direction: column; gap: 24px; }
+.sec-title { font-size: 22px; font-weight: 800; color: var(--brand-sub); letter-spacing: -0.025em; display: flex; align-items: center; gap: 8px; }
+  .sec-title::before { content: ''; width: 4px; height: 18px; background: var(--brand-main); border-radius: 2px; }
 
-.hero-card::after{
-  content:""; position:absolute; inset:-140px -160px auto auto; width:420px; height:420px;
-  background:radial-gradient(circle at center, rgba(59,130,246,0.28), transparent 65%);
-  pointer-events:none; mix-blend-mode:screen;
-}
+/* 히어로 카드 개선 */
+.hero-card { display: flex; justify-content: flex-start; align-items: flex-start; padding: 32px; border-radius: var(--card-radius); background: var(--card-bg); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 6px 14px rgba(15,23,42,0.04); }
+.hero-main { display: flex; flex-direction: column; gap: 12px; }
+.hero-tags { display: flex; gap: 8px; }
+.hero-title { margin: 0; font-size: 44px; font-weight: 900; color: var(--brand-sub); letter-spacing: -0.03em; }
+.ticker-code { font-size: 14px; font-weight: 600; color: #94a3b8; margin-left: 10px; }
+.hero-company { font-size: 18px; color: #64748b; font-weight: 500; margin: 0; }
+.hero-desc { font-size: 14px; color: #94a3b8; margin: 0; }
 
-.hero-main{ display:flex; flex-direction:column; gap:16px; max-width:60%; position:relative; z-index:1; }
-.hero-tags{ display:flex; flex-wrap:wrap; gap:8px; }
-.hero-pill{ box-shadow:0 4px 16px rgba(37,99,235,0.18); }
-.hero-title{ margin:0; font-size:40px; font-weight:800; color:#0f172a; letter-spacing:-0.01em; }
-.hero-company{ margin:0; font-size:22px; font-weight:600; color:#1f2937; }
-.hero-desc{ margin:0; font-size:0.95rem; color:#475569; }
+/* 확장 영역 (차트) */
+.hero-extended { margin-top: 20px; }
+.hero-chart { background: var(--card-bg); border-radius: calc(var(--card-radius)); border: 1px solid rgba(226, 232, 240, 0.8); padding: 28px; min-height: 420px; box-shadow: 0 6px 14px rgba(15,23,42,0.04); }
 
-.hero-indicators{ display:flex; flex-wrap:wrap; gap:12px 20px; }
-.indicator-item{ display:flex; align-items:center; gap:8px; }
-.indicator-label{ font-size:0.85rem; font-weight:600; color:#334155; }
+/* 탭 네비게이션 */
+.tab-nav { display: flex; gap: 24px; padding: 0 24px; border-bottom: 1px solid rgba(226,232,240,0.8); margin-top: -6px; }
+.tab-btn { background: none; border: none; padding: 12px 0; font-size: 18px; font-weight: 700; color: #94a3b8; cursor: pointer; transition: all 0.18s; position: relative; }
+.tab-btn:hover { color: var(--brand-sub); }
+.tab-btn.active { color: var(--brand-sub); }
+.tab-btn.active::after { content: ''; position: absolute; bottom: -6px; left: 0; width: 100%; height: 3px; background: var(--brand-sub); border-radius: 999px; }
 
-.hero-price{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:flex-end; gap:6px; text-align:right; }
-.price-caption{ font-size:0.85rem; color:#475569; }
-.price-value{ font-size:36px; font-weight:800; color:#0f172a; }
-.price-delta{ font-size:1rem; font-weight:700; }
-
-.delta{ font-weight:600; }
-.delta.pos{ color:#16a34a; } .delta.neg{ color:#dc2626; } .delta.flat{ color:#4b5563; }
-
-.sec{ display:grid; gap:16px; }
-.sec-title{ margin:0; font-size:20px; font-weight:700; color:#0f172a; }
-
-.gauges{
-  display:grid;
-  grid-template-columns: 1fr 1.35fr 1fr;
-  gap:22px;
-  align-items:center;
-  justify-items:stretch;
-}
-
-
-.gauge-block{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  padding:14px 12px 16px;
-  border:1px solid rgba(148,163,184,0.18);
-  border-radius:18px;
-  background:#ffffff;
-  box-shadow:0 10px 20px rgba(15,23,42,0.1);
-  min-height:0;
-}
-
-.gauge-header{ display:flex; align-items:center; justify-content:space-between; width:100%; gap:12px; }
-.gauge-title{ margin:0; font-size:18px; font-weight:700; color:#111827; }
-
-.gauge-body{
-  background:linear-gradient(180deg, rgba(241,245,249,0.45) 0%, rgba(241,245,249,0.12) 100%);
-  border-radius:14px;
-  padding:4px 6px 10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-height:0;
-  overflow:visible;
-}
-.gauge-chart{
-  flex:1 1 auto;
-  min-width:220px;
-  max-height:220px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:visible;
-}
-.gauge-update{ margin:0; font-size:0.85rem; color:#6b7280; }
-
-.metrics-grid{
-  --metric-card-min-height: 0px;
-}
-.metrics-grid :deep(.metric-card){
-  height:100%;
-  background:linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.96) 100%);
-  border:1px solid rgba(148,163,184,0.22);
-  box-shadow:0 10px 20px rgba(15,23,42,0.08);
-  display:flex;
-  flex-direction:column;
-}
-.metrics-grid :deep(.metric-card .row.head){ margin-bottom:12px; }
-.metrics-grid :deep(.metric-card .title){ font-size:18px; }
-.metrics-grid :deep(.metric-card .content){ min-height:0; gap:12px; }
-.metrics-grid :deep(.metric-card .subtitle){ font-size:0.85rem; color:#64748b; }
-.metrics-grid :deep(.metric-card .value){ font-size:1.4rem; font-weight:700; color:#0f172a; }
-
-.cta-row{
-  margin-top:20px;
-  padding:12px 0;
-  display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(260px,1fr));
-  gap:16px;
-}
-.cta{
-  width:100%;
-  padding:0;
-  border:none;
-  background:transparent;
-}
-.cta:focus-visible .cta-content{
-  outline:3px solid rgba(59,130,246,0.45);
-  outline-offset:3px;
-}
-.cta.cta-locked .cta-content{
-  filter:grayscale(0.25);
-  opacity:0.65;
-  box-shadow:none;
-}
-.cta.cta-locked:hover .cta-content{
-  transform:none;
-  box-shadow:none;
-}
-.cta.cta-locked .cta-icon{
-  opacity:0.75;
-}
-.cta.cta-locked .cta-title,
-.cta.cta-locked .cta-sub{
-  color:rgba(15,23,42,0.55);
-}
-.cta-content{
-  position:relative;
-  display:flex;
-  align-items:center;
-  gap:18px;
-  width:100%;
-  padding:20px 24px;
-  border-radius:20px;
-  transition:transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow:0 14px 24px rgba(15,23,42,0.08);
-}
-.cta:hover .cta-content{
-  transform:translateY(-4px);
-  box-shadow:0 20px 38px rgba(15,23,42,0.16);
-}
-.cta-icon{
-  flex:0 0 48px;
-  height:48px;
-  border-radius:16px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:1.35rem;
-  font-weight:700;
-  background:rgba(255,255,255,0.38);
-}
-.cta-text{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-.cta-title{
-  font-size:1.05rem;
-  font-weight:700;
-  letter-spacing:-0.01em;
-}
-.cta-sub{
-  font-size:0.9rem;
-  color:rgba(15,23,42,0.65);
-}
-.cta.neg .cta-content{
-  background:linear-gradient(135deg, rgba(254,226,226,0.95) 0%, rgba(252,165,165,0.85) 100%);
-  border:1px solid rgba(248,113,113,0.45);
-  color:#9f1239;
-}
-.cta.neg .cta-icon{
-  color:#be123c;
-  background:rgba(255,255,255,0.58);
-}
-.cta.neg .cta-sub{ color:rgba(153,27,27,0.75); }
-.cta.pos .cta-content{
-  background:linear-gradient(135deg, rgba(217,249,255,0.95) 0%, rgba(187,247,208,0.9) 100%);
-  border:1px solid rgba(52,211,153,0.45);
-  color:#047857;
-}
-.cta.pos .cta-icon{
-  color:#0f766e;
-  background:rgba(255,255,255,0.6);
-}
-.cta.pos .cta-sub{ color:rgba(22,101,52,0.75); }
-
-@media (max-width: 1024px){
-  .page{ padding:34px; }
-  .hero-card{ flex-direction:column; align-items:flex-start; }
-  .hero-main{ max-width:100%; }
-  .hero-price{ align-items:flex-start; text-align:left; }
-  .gauges{ grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); }
-}
-
-@media (max-width: 768px){
-  .page{ padding:24px; border-radius:20px; }
-  .hero-card{ padding:24px; }
-  .hero-title{ font-size:32px; }
-  .hero-company{ font-size:18px; }
-  .gauges{ gap:18px; }
-  .gauge-block{ padding:12px 10px 14px; }
-}
-
-@media (max-width: 720px){
-  .cta-row{ grid-template-columns: 1fr; }
-  .cta-content{
-    padding:18px 20px;
-  }
-}
-.hint{ text-align:center; color:#9ca3af; font-size:.9rem; transition:color 0.2s ease; }
-.hint.disabled{ color:#ef4444; font-weight:600; }
-
-.op-list{ display:grid; gap:10px; }
-
-.community-wrapper {
-  background: #ffffff;
-  border: 1px solid rgba(148,163,184,0.18);
-  border-radius: 18px;
-  box-shadow: 0 10px 20px rgba(15,23,42,0.1);
-}
-
-.community-wrapper :deep(.community-feed) {
+/* 재무 테이블 스타일 */
+.financial-table-wrap {
+  background: white;
+  border-radius: 24px;
   padding: 24px;
-  margin: 0;
-  max-width: none;
+  border: 1px solid #e2e8f0;
+  margin-top: 20px;
 }
 
-.community-wrapper :deep(.community-feed__back),
-.community-wrapper :deep(.community-feed__title) {
-  display: none;
+.financial-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.financial-table th {
+  padding: 16px;
+  border-bottom: 2px solid #f1f5f9;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.financial-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+  .financial-table .pos { color: var(--brand-main); }
+.financial-table .neg { color: var(--brand-deep-blue); }
+
+/* 토론 영역 전용 */
+.community-wrapper-full { background: white; border-radius: 32px; border: 1px solid rgba(226, 232, 240, 0.8); padding: 32px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); }
+
+/* 중단/하단 공통 카드 */
+.analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+
+.related-reports { background: var(--card-bg); border-radius: 12px; padding: 18px; border: 1px solid rgba(226,232,240,0.8); }
+.related-reports__title { margin: 0 0 12px; font-size: 18px; color: var(--brand-sub); font-weight: 800 }
+.report-list { display: flex; flex-direction: column; gap: 12px }
+.report-card { background: white; border-radius: 10px; padding: 14px; box-shadow: 0 6px 12px rgba(15,23,42,0.04); border: 1px solid #eef2f6; cursor: pointer; transition: all 0.2s; }
+.report-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(15,23,42,0.08); }
+.report-card__title { margin: 0 0 6px; font-size: 16px; font-weight: 800; color: var(--brand-sub) }
+.report-card__summary { margin: 0 0 8px; color: #475569; font-size: 14px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.report-card__meta { font-size: 12px; color: #94a3b8; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.report-grade { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; }
+.report-grade.grade-매수 { background: #dcfce7; color: #15803d; }
+.report-grade.grade-보유 { background: #fff7ed; color: #c2410c; }
+.report-grade.grade-주의 { background: #fef2f2; color: #dc2626; }
+
+/* DART 공시 스타일 */
+.disclosure-table-wrap {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.disclosure-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.disclosure-table thead {
+  background: var(--bg);
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.disclosure-table th {
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.disclosure-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s;
+}
+
+.disclosure-table tbody tr:hover {
+  background: var(--bg);
+}
+
+.disclosure-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.disclosure-table td {
+  padding: 16px 20px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.disclosure-date {
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: 110px;
+}
+
+.disclosure-time {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.disclosure-report {
+  min-width: 300px;
+}
+
+.disclosure-link {
+  color: var(--brand-deep-blue);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.disclosure-link:hover {
+  color: var(--brand-deep-blue);
+  text-decoration: underline;
+}
+
+.disclosure-link::before {
+  content: '📄';
+  font-size: 16px;
+}
+
+.disclosure-submitter {
+  color: #1e293b;
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.disclosure-market {
+  text-align: center;
+  min-width: 80px;
+}
+
+.market-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.market-badge.market-Y {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.market-badge.market-K {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.market-badge.market-N {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.market-badge.market-E {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.empty-text {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+@media (max-width: 1200px) {
+  .hero-extended, .analysis-grid, .tab-nav { grid-template-columns: 1fr; gap: 16px; }
+  .tab-nav { gap: 20px; }
+  .page { padding: 20px; }
+  .hero-card { flex-direction: column; gap: 24px; text-align: center; }
 }
 </style>

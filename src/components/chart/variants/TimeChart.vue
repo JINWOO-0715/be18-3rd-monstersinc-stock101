@@ -36,7 +36,7 @@ import BaseChart from '../BaseChart.vue'
  * @property {number} [height=320] - 차트 높이(px)
  * @property {string|object} [theme=''] - ECharts 테마
  * @property {boolean} [loading=false] - 로딩 오버레이 표시 여부
- * @property {string} [color='#2563eb'] - 선/면 색상
+ * @property {string} [color='#2D72ED'] - 선/면 색상
  * @property {boolean} [area=false] - 면적 영역 표시 여부
  * @property {boolean} [smooth=false] - 곡선 스무딩 여부
  * @property {boolean} [yScale=true] - y축 scale 적용 여부
@@ -53,7 +53,7 @@ const props = defineProps({
   theme:  { type: [String, Object], default: '' },
   loading:{ type: Boolean, default: false },
 
-  color: { type: String, default: '#2563eb' },
+  color: { type: String, default: '#2D72ED' },
   area: { type: Boolean, default: false },
   smooth: { type: Boolean, default: false },
   yScale: { type: Boolean, default: true },

@@ -46,7 +46,7 @@
             :decimals="decimals"
             :currency="currency"
             :compact="compact"
-            size="xl"
+            :size="metricSize"
           />
         </slot>
       </div>
@@ -149,6 +149,7 @@ const props = defineProps({
   variant: { type: String, default: 'outlined' }, // outlined|elevated|soft|ghost
   pad: { type: String, default: 'lg' },           // none|sm|md|lg
   radius: { type: String, default: 'xl' },        // md|lg|xl|full
+  metricSize: { type: String, default: 'xl' },    // MetricValue 사이즈 전달
   clickable: { type: Boolean, default: false },
   to: { type: [String, Object], default: null },
   href: { type: String, default: '' },
@@ -224,8 +225,8 @@ const showBadgeComputed = computed(() => props.showBadge && (props.badgeText || 
 .spacer{ flex:1 1 auto; }
 .value{ margin-top:4px; }
 
-.sub{ font-weight:600; color:#16a34a; }
-.trend-down .sub{ color:#ef4444; }
+.sub{ font-weight:600; color: var(--brand-main); }
+.trend-down .sub{ color: var(--brand-main); }
 .trend-flat .sub{ color:#6b7280; }
 .sub .label{ margin-right:6px; font-weight:500; color:#6b7280; }
 </style>

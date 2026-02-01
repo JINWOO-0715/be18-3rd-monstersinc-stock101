@@ -32,11 +32,9 @@ defineProps({
 })
 
 const options = [
-  { label: 'Strong Sell', value: 'Strong Sell', tone: 'negative' },
-  { label: 'Sell', value: 'Sell', tone: 'negative' },
-  { label: 'Hold', value: 'Hold', tone: 'neutral' },
-  { label: 'Buy', value: 'Buy', tone: 'positive' },
-  { label: 'Strong Buy', value: 'Strong Buy', tone: 'positive' },
+  { label: '매수', value: 'Buy', tone: 'positive' },
+  { label: '관망', value: 'Hold', tone: 'neutral' },
+  { label: '매도', value: 'Sell', tone: 'negative' },
 ]
 </script>
 

@@ -101,7 +101,7 @@ const styleObj = computed(() => {
 .txt--variant-muted    { color:#6b7280; }
 .txt--variant-caption  { color:#6b7280; text-transform:none; font-size:.875rem; }
 .txt--variant-overline { color:#6b7280; text-transform:uppercase; letter-spacing:.06em; font-size:.75rem; }
-.txt--variant-link     { color:#2563eb; text-decoration:underline; cursor:pointer; }
+.txt--variant-link     { color:var(--brand-deep-blue); text-decoration:underline; cursor:pointer; }
 
 /* 크기 */
 .txt--size-xs{ font-size:.75rem; line-height:1.1; }

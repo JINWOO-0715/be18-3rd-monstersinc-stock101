@@ -3,12 +3,53 @@
     <button v-if="!embedded" type="button" class="community-feed__back" @click="handleBack">Back</button>
     <h1 v-if="!embedded" class="community-feed__title">커뮤니티 대화</h1>
 
+    <section class="community-insights">
+      <!-- 1. 투자자 심리 지수 (시각화) -->
+      <div class="insight-card sentiment-card">
+        <h3 class="insight-title">📊 전체 투자자 심리 지수</h3>
+        <div class="sentiment-content">
+          <div class="sentiment-chart">
+            <apexchart
+              type="donut"
+              height="200"
+              :options="sentimentDonutOptions"
+              :series="sentimentDonutSeries"
+            ></apexchart>
+          </div>
+          <div class="sentiment-stats">
+            <div class="stat-item pos">
+              <span class="stat-label">매수 희망</span>
+              <span class="stat-value">65%</span>
+            </div>
+            <div class="stat-item neg">
+              <span class="stat-label">매도 희망</span>
+              <span class="stat-value">20%</span>
+            </div>
+            <div class="stat-item neu">
+              <span class="stat-label">관망 중</span>
+              <span class="stat-value">15%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. AI 여론 요약 -->
+      <div class="insight-card ai-summary-card">
+        <h3 class="insight-title">🤖 AI 여론 브리핑</h3>
+        <div class="ai-content">
+          <div class="ai-badge">LIVE SUMMARY</div>
+          <p class="ai-text">
+            "현재 개미 투자자들은 <strong>단기적인 조정</strong>을 예상하면서도 전문가 그룹은 <strong>장기적 성장세</strong>에 무게를 두고 있습니다. 특히 '신사업 투자'에 대한 긍정적인 여론이 70% 이상을 차지하며 낙관적인 분위기가 지배적입니다."
+          </p>
+        </div>
+      </div>
+    </section>
+
     <PostComposer
-      :opinion="selectedOpinion"
-      :content="composerContent"
+      v-model:opinion="selectedOpinion"
+      v-model:position="selectedPosition"
+      v-model:content="composerContent"
       :is-logged-in="hasAuth"
-      @update:opinion="(value) => (selectedOpinion = value)"
-      @update:content="(value) => (composerContent = value)"
       @submit="handleCreatePost"
       @exceed="notifyMaxChars"
       @login-required="requireLogin"
@@ -30,14 +71,17 @@
 </template>
 
 <script setup>
+import { computed, onActivated, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+import VueApexCharts from 'vue3-apexcharts'
 import CommunityPostCard from '@/components/community/CommunityPostCard.vue'
 import PostComposer from '@/components/community/PostComposer.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useSessionStore } from '@/stores/session'
 import { useToastStore } from '@/stores/toast'
-import axios from 'axios'
-import { computed, onActivated, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+
+const apexchart = VueApexCharts
 
 const LOGIN_REQUIRED_MESSAGE = '로그인 후 사용해 주세요.'
 
@@ -69,7 +113,29 @@ const TEST_DEFAULT_STOCK_ID = 1001
 const { embedded } = props
 
 const selectedOpinion = ref('')
+const selectedPosition = ref('ANT')
 const composerContent = ref('')
+
+// 심리 지수 차트 설정
+const sentimentDonutSeries = ref([65, 20, 15])
+const sentimentDonutOptions = {
+  chart: { type: 'donut', fontFamily: 'Inter, sans-serif' },
+  labels: ['매수', '매도', '관망'],
+  colors: ['#E02D2D', '#2D72ED', '#94a3b8'],
+  legend: { show: false },
+  dataLabels: { enabled: false },
+  plotOptions: {
+    pie: {
+      donut: {
+        size: '70%',
+        labels: {
+          show: true,
+          total: { show: true, label: '심리지수', fontSize: '12px', fontWeight: 600, color: '#64748b' }
+        }
+      }
+    }
+  }
+}
 
 const DEV_FALLBACK_POSTS = [
   { postId: 26, stockId: 0, userId: 15, opinion: 'Sell', content: 'ewww', createdAt: '2025-09-23 17:17:00', userName: 'test', likedByMe: false, likeCount: 0, commentCount: 0, authorTierCode: 'BRONZE', imageUrl: 'https://plus.unsplash.com/premium_photo-1710911198710-3097c518f0e1?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
@@ -170,23 +236,22 @@ function notifyMaxChars() {
 
 async function handleCreatePost() {
   if (!hasAuth.value) {
-    // prefer a clear toast when auth missing and clear composer content
     toastStore.pushToast({ message: '로그인 후 사용해 주세요.', tone: 'info' })
     composerContent.value = ''
     selectedOpinion.value = ''
+    selectedPosition.value = 'ANT'
     return
   }
   const content = composerContent.value.trim()
   if (!selectedOpinion.value || !content) return
   try {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
-  const headers = {}
-  // prefer token from authStore (populated by login), fallback to sessionStore
-  const token = authStore.userInfo?.accessToken ?? sessionStore.accessToken
-  if (token && token !== 'demo-access-token') headers.Authorization = `Bearer ${token}`
+    const headers = {}
+    const token = authStore.userInfo?.accessToken ?? sessionStore.accessToken
+    if (token && token !== 'demo-access-token') headers.Authorization = `Bearer ${token}`
     const body = {
       stockId: props.stockId ?? selectedStockId.value ?? TEST_DEFAULT_STOCK_ID,
       opinion: selectedOpinion.value,
+      position: selectedPosition.value, // 신규 추가된 피드백 반영
       content,
     }
     const { data } = await axios.post('/api/v1/board/posts', body, { headers })
@@ -199,6 +264,7 @@ async function handleCreatePost() {
       posts.value = [created, ...posts.value]
     }
     selectedOpinion.value = ''
+    selectedPosition.value = 'ANT'
     composerContent.value = ''
     toastStore.pushToast({ message: '게시물이 등록되었어요.', tone: 'success' })
     await loadFeed()
@@ -305,6 +371,87 @@ function handleBack() {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* 인사이트 섹션 (심리 지수 & AI 요약) */
+.community-insights {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 24px;
+}
+
+.insight-card {
+  background: white;
+  border-radius: 24px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+}
+
+.insight-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 20px;
+  letter-spacing: -0.025em;
+}
+
+.sentiment-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.sentiment-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.stat-item.pos { background: #fee2e2; color: var(--brand-main); }
+.stat-item.neg { background: #dbeafe; color: var(--brand-deep-blue); }
+.stat-item.neu { background: #f1f5f9; color: #64748b; }
+
+.ai-summary-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  border: 1px solid #cbd5e1;
+}
+
+.ai-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-badge {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 900;
+  background: var(--brand-deep-blue);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.ai-text {
+  font-size: 15px;
+  color: #334155;
+  line-height: 1.6;
+  font-weight: 500;
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .community-insights { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {

@@ -9,48 +9,50 @@ const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use(
-
-    (config) =>{
+    (config) => {
         const authStore = useAuthStore();
-        const accessToken = authStore.accessToken;
+        const accessToken = authStore.userInfo.accessToken;
 
-        if(accessToken){
+        if (accessToken) {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
-        
+
         return config;
     },
-    (error) =>{
+    (error) => {
         return Promise.reject(error);
     }
 );
 
-
 apiClient.interceptors.response.use(
-    (response) =>{
+    (response) => {
         return response;
     },
-    async(error)=>{
-        const orignalRequest = error.config;
+    async (error) => {
+        const originalRequest = error.config;
 
-        if(error.response.status === 401 && !orignalRequest._retry){
-            orignalRequest._retry = true;
+        if (error.response && error.response.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
 
             try {
-                const refreshResponse = await axios.post('/api/v1/auth/refresh');
+                const authStore = useAuthStore();
+                const refreshResponse = await axios.post(
+                    'http://localhost:8080/api/v1/auth/refresh',
+                    null,
+                    { withCredentials: true }
+                );
                 const newAccessToken = refreshResponse.data.accessToken;
 
-                authStore.setAccessToken(newAccessToken);
-                // 새로운 토큰으로 원래 요청의 헤더를 업데이트하고 재시도
+                authStore.userInfo.accessToken = newAccessToken;
+                localStorage.setItem('authToken', newAccessToken);
+
                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-                console.log("리프레시 토큰 만료 갱신 성공");
-                return axiosInstance(originalRequest);
-            } catch (error) {
-                // 리프레시 토큰 만료 등 갱신 실패 시 로그아웃
-                //authStore.logout();
-                console.log("리프레시 토큰 만료 갱신 실패");
+                console.log("리프레시 토큰 갱신 성공");
+                return apiClient(originalRequest);
+            } catch (refreshError) {
+                console.log("리프레시 토큰 갱신 실패");
                 router.push('/');
-                return Promise.reject(error);
+                return Promise.reject(refreshError);
             }
         }
         return Promise.reject(error);

@@ -200,7 +200,7 @@ async function submitRegister() {
 }
 
 .custom-input:focus {
-    border-color: #5a2c51;
+    border-color: var(--brand-sub);
 }
 
 
@@ -243,42 +243,23 @@ async function submitRegister() {
 .register-button {
     width: 100%;
     padding: 14px 20px;
-    border: none;
+    border: 1px solid var(--brand-sub);
     border-radius: 8px;
-    background-color: #3f1e38;
-    color: white;
+    background-color: transparent;
+    color: var(--brand-sub);
     font-size: 18px;
-    font-weight: bold;
+    font-weight: 800;
     cursor: pointer;
     margin-top: 8px;
-    transition: background-color 0.2s;
+    transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
 }
 
-.register-button:hover:not(:disabled) {
-    background-color: #5a2c51;
-    /* 호버 시 색상 변화 */
-}
+.register-button:hover:not(:disabled) { background-color: var(--brand-sub); color: var(--brand-neutral); transform: translateY(-2px) }
 
-.register-button:disabled {
-    background-color: #a3a3a3;
-    /* 비활성화 시 색상 */
-    cursor: not-allowed;
-}
+.register-button:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; border-color: #e5e7eb }
 
 
 /* --- 로그인 이동 링크 --- */
-.switch {
-    margin-top: 12px;
-    text-align: center;
-    /* 중앙 정렬 */
-    color: #6b7280;
-    font-size: 14px;
-}
-
-.login-link {
-    color: #3f1e38;
-    /* 링크 색상 */
-    text-decoration: none;
-    font-weight: 600;
-}
+.switch { margin-top: 12px; text-align: center; color: var(--brand-sub); font-size: 14px }
+.login-link { color: var(--brand-main); text-decoration: none; font-weight: 700 }
 </style>

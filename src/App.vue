@@ -1,5 +1,6 @@
 <template>
   <div class="app-shell">
+    <Header />
     <main class="app-shell__main">
       <RouterView />
     </main>
@@ -10,12 +11,13 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 import ToastHost from '@/components/shared/ToastHost.vue'
+import Header from '@/components/Header.vue'
 </script>
 
 <style scoped>
 .app-shell {
   min-height: 100vh;
-  background-color: #f5f6f8;
+  background-color: var(--bg);
 }
 
 .app-shell__header {
@@ -25,15 +27,15 @@ import ToastHost from '@/components/shared/ToastHost.vue'
   justify-content: space-between;
   gap: 12px;
   padding: 20px 40px;
-  background-color: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
 .app-shell__brand {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
+  color: var(--brand-sub);
 }
 
 .app-shell__nav {
@@ -44,7 +46,7 @@ import ToastHost from '@/components/shared/ToastHost.vue'
 
 .app-shell__nav a {
   font-size: 14px;
-  color: #2563eb;
+  color: var(--brand-deep-blue);
   text-decoration: none;
 }
 

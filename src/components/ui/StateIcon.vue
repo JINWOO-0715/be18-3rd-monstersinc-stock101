@@ -41,7 +41,7 @@ const props = defineProps({
 .s-lg { font-size: 20px; }
 
 .v-success { color: #16a34a; } /* 초록 */
-.v-info    { color: #2563eb; } /* 파랑 */
-.v-danger  { color: #dc2626; } /* 빨강 */
+.v-info    { color: var(--brand-deep-blue); } /* 파랑 */
+.v-danger  { color: var(--brand-main); } /* 빨강 */
 .v-neutral { color: #6b7280; } /* 회색 */
 </style>
