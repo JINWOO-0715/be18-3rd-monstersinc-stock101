@@ -194,30 +194,12 @@ const fallbackStocks = [
 ]
 
 onMounted(async () => {
-  // 시장 지수 데이터 로드 (한국투자증권 API)
-  try {
-    const { data } = await axios.get('/api/v1/rest-client/market-indices')
-    if (data && Array.isArray(data) && data.length > 0) {
-      indices.value = data.map(item => ({
-        id: item.indexCode,
-        title: item.indexName,
-        value: parseFloat(item.currentPrice) || 0,
-        change: parseFloat(item.changeRate) || 0
-      }))
-    } else {
-      // Fallback data
-      indices.value = [
-        { id: 'kospi', title: 'KOSPI', value: 2567.89, change: 1.23 },
-        { id: 'kosdaq', title: 'KOSDAQ', value: 834.56, change: -0.89 },
-      ]
-    }
-  } catch (error) {
-    console.error('시장 지수 데이터를 불러오지 못했어요', error)
-    indices.value = [
-      { id: 'kospi', title: 'KOSPI', value: 2567.89, change: 1.23 },
-      { id: 'kosdaq', title: 'KOSDAQ', value: 834.56, change: -0.89 },
-    ]
-  }
+  // 시장 지수 데이터 (KOSPI, KOSDAQ)
+  // TODO: 백엔드 실시간 시장 지수 API 구현 시 연동
+  indices.value = [
+    { id: 'kospi', title: 'KOSPI', value: 2567.89, change: 1.23 },
+    { id: 'kosdaq', title: 'KOSDAQ', value: 834.56, change: -0.89 },
+  ]
 
   // 전체 주식 데이터 로드 (한 번만 호출)
   try {

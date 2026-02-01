@@ -22,8 +22,9 @@
     <button v-if="showEditButton" type="button" class="profile-header__action" @click="openEditModal">수정하기</button>
   </section>
 
-  <!-- Edit Profile Modal -->
-  <div v-if="showModal" class="modal-overlay" @click="closeModal">
+  <!-- Edit Profile Modal (Teleported to body) -->
+  <Teleport to="body">
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
         <h3>프로필 수정</h3>
@@ -62,7 +63,8 @@
         </div>
       </form>
     </div>
-  </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
