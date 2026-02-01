@@ -130,7 +130,8 @@ const closeModal = () => {
 const saveProfile = async () => {
   loading.value = true
   try {
-    const response = await axios.patch('http://localhost:8080/api/v1/users/me', {
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+    const response = await axios.patch(`${apiBaseUrl}/api/v1/users/me`, {
       name: editForm.name,
       statusMessage: editForm.statusMessage
     }, {

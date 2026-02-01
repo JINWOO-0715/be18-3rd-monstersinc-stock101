@@ -1,7 +1,7 @@
 import { mockCommunityComments, mockCommunityPosts } from '@/data/communityMock'
 import axios from 'axios'
 
-const BASE_URL = 'http://localhost:8080'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 const apiClient = axios.create({baseURL: BASE_URL,
   withCredentials: false,
 
@@ -188,7 +188,7 @@ export async function createPost(payload = {}, options = {}) {
       opinion: payload.opinion,
       content: trimmedContent,
       createdAt: new Date().toISOString(),
-      userName: payload.userName ?? '»ç¿ëÀÚ',
+      userName: payload.userName ?? 'ï¿½ï¿½ï¿½ï¿½ï¿½',
       likedByMe: false,
       likeCount: 0,
       commentCount: 0,
@@ -265,7 +265,7 @@ export async function createComment(postId, payload, options = {}) {
       postId,
       userId: payload.userId ?? 0,
       parentCommentId: payload.parentCommentId ?? null,
-      userName: payload.userName ?? '»ç¿ëÀÚ',
+      userName: payload.userName ?? 'ï¿½ï¿½ï¿½ï¿½ï¿½',
       authorTierCode: payload.authorTierCode ?? 'BRONZE',
       // totalCommentCount should reflect the total number of comments for the post
       totalCommentCount: 0,

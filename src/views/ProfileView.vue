@@ -210,7 +210,8 @@ const fetchUserInfo = async (targetUserId) => {
   try {
     // Always fetch user info from API using the actual user ID
     console.log('Fetching user info from API for user:', targetUserId)
-    const response = await axios.get(`http://localhost:8080/api/v1/users/${targetUserId}`)
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+    const response = await axios.get(`${apiBaseUrl}/api/v1/users/${targetUserId}`)
     const userData = response.data.items[0]
     profile.value.user = {
       id: userData.userId,
@@ -238,7 +239,8 @@ const fetchUserPosts = async (targetUserId) => {
       headers.Authorization = `Bearer ${token}`
     }
 
-    const response = await axios.get(`http://localhost:8080/api/v1/board/user/${targetUserId}`, { headers })
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+    const response = await axios.get(`${apiBaseUrl}/api/v1/board/user/${targetUserId}`, { headers })
     const items = Array.isArray(response.data?.items)
       ? response.data.items
       : Array.isArray(response.data?.data)
@@ -264,7 +266,8 @@ const fetchPredictions = async (targetUserId) => {
 
    // Fetch predictions using direct axios call (for other users or unauthenticated)
     console.log('Fetching predictions for user:', targetUserId)
-    response = await axios.get(`http://localhost:8080/api/v1/prediction/user/${targetUserId}`)
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+    response = await axios.get(`${apiBaseUrl}/api/v1/prediction/user/${targetUserId}`)
 
     const transformedPredictions = transformPredictionData(response.data || response)
     profile.value.predictions = transformedPredictions
