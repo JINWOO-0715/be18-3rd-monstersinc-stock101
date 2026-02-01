@@ -4,7 +4,16 @@
       <h2 class="post-composer__title">지금 당신의 생각을 남겨보세요</h2>
     </header>
 
-  <OpinionSelector v-model="opinionProxy" :disabled="!isLoggedIn || disabled" @login-required="$emit('login-required')" />
+    <div class="composer-selectors">
+      <div class="selector-group">
+        <label class="selector-label">나의 포지션</label>
+        <PositionSelector v-model="positionProxy" :disabled="!isLoggedIn || disabled" />
+      </div>
+      <div class="selector-group">
+        <label class="selector-label">투자 심리</label>
+        <OpinionSelector v-model="opinionProxy" :disabled="!isLoggedIn || disabled" @login-required="$emit('login-required')" />
+      </div>
+    </div>
 
     <div class="post-composer__textarea-wrapper" :class="{ 'post-composer__textarea-wrapper--locked': !isLoggedIn }">
       <textarea
@@ -32,11 +41,16 @@
 <script setup>
 import { computed, ref } from 'vue'
 import OpinionSelector from './OpinionSelector.vue'
+import PositionSelector from './PositionSelector.vue'
 
 const props = defineProps({
   opinion: {
     type: String,
     default: '',
+  },
+  position: {
+    type: String,
+    default: 'ANT',
   },
   content: {
     type: String,
@@ -56,7 +70,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:opinion', 'update:content', 'submit', 'exceed', 'login-required'])
+const emit = defineEmits(['update:opinion', 'update:position', 'update:content', 'submit', 'exceed', 'login-required'])
 
 const textareaRef = ref(null)
 let lastLoginEmit = 0
@@ -65,10 +79,15 @@ const opinionProxy = computed({
   set: (value) => emit('update:opinion', value),
 })
 
+const positionProxy = computed({
+  get: () => props.position,
+  set: (value) => emit('update:position', value),
+})
+
 const content = computed(() => props.content)
 
 const canSubmit = computed(
-  () => props.isLoggedIn && !props.disabled && props.opinion && props.content.trim().length > 0
+  () => props.isLoggedIn && !props.disabled && props.opinion && props.position && props.content.trim().length > 0
 )
 
 function emitLoginRequired() {
@@ -135,8 +154,29 @@ function handleSubmit() {
 .post-composer__title {
   margin: 0;
   font-size: 20px;
-  font-weight: 700;
-  color: #111827;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.025em;
+}
+
+.composer-selectors {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.selector-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .post-composer__textarea-wrapper {

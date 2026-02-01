@@ -165,7 +165,7 @@ const saveProfile = async () => {
   padding: 24px;
   border: 1px solid #e6e8ec;
   border-radius: 24px;
-  background-color: #fff;
+  background-color: var(--card-bg);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
@@ -216,8 +216,8 @@ const saveProfile = async () => {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 500;
-  color: #2563eb;
-  background-color: rgba(37, 99, 235, 0.12);
+  color: var(--brand-deep-blue);
+  background-color: rgba(45, 114, 237, 0.08);
 }
 
 .profile-header__status {
@@ -231,7 +231,7 @@ const saveProfile = async () => {
   padding: 10px 18px;
   border-radius: 12px;
   border: 1px solid #d1d5db;
-  background-color: #f9fafb;
+  background-color: var(--card-bg);
   font-weight: 500;
   font-size: 14px;
   color: #1f2937;
@@ -239,8 +239,8 @@ const saveProfile = async () => {
 }
 
 .profile-header__action:hover {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: var(--brand-deep-blue);
+  border-color: var(--brand-deep-blue);
   color: #fff;
 }
 
@@ -323,11 +323,11 @@ const saveProfile = async () => {
   box-sizing: border-box;
 }
 
-.form-input:focus,
-.form-textarea:focus {
+  form-input:focus,
+  .form-textarea:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--brand-deep-blue);
+  box-shadow: 0 0 0 3px rgba(45, 114, 237, 0.12);
 }
 
 .form-textarea {
@@ -366,12 +366,12 @@ const saveProfile = async () => {
 }
 
 .btn-save {
-  background-color: #2563eb;
+  background-color: var(--brand-deep-blue);
   color: #fff;
 }
 
 .btn-save:hover:not(:disabled) {
-  background-color: #1d4ed8;
+  filter: brightness(0.95);
 }
 
 .btn-save:disabled {

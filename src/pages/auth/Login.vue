@@ -55,7 +55,6 @@ async function submitLogin() {
     submitted.value = true;
     errorMessage.value = '';
 
-    //console.log('로그인 시도:', email.value, password.value);
     const result = await authStore.login(email.value, password.value, stayLoggedIn.value);
 
     if (result.success) {
@@ -147,7 +146,7 @@ h1 {
 }
 
 .custom-input:focus {
-    border-color: #5a2c51;
+    border-color: var(--brand-main);
 }
 
 /* ==================================== */
@@ -164,29 +163,17 @@ h1 {
     padding: 14px 20px;
     border: none;
     border-radius: 8px;
-    background-color: #3f1e38;
-    color: white;
+    background-color: var(--brand-sub);
+    color: var(--brand-neutral);
     font-size: 18px;
-    font-weight: bold;
+    font-weight: 800;
     cursor: pointer;
     margin-top: 8px;
-    transition: background-color 0.2s;
+    transition: background-color 160ms ease, transform 120ms ease;
 }
 
-.login-button:hover {
-    background-color: #5a2c51;
-}
+.login-button:hover { filter: brightness(0.96); transform: translateY(-2px) }
 
-.switch {
-    margin-top: 12px;
-    text-align: center;
-    color: #6b7280;
-    font-size: 14px;
-}
-
-.register-link {
-    color: #3f1e38;
-    text-decoration: none;
-    font-weight: 600;
-}
+.switch { margin-top: 12px; text-align: center; color: var(--brand-sub); font-size: 14px }
+.register-link { color: var(--brand-main); text-decoration: none; font-weight: 700 }
 </style>

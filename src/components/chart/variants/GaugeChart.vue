@@ -22,7 +22,7 @@ import BaseChart from '../BaseChart.vue'
  * <!-- 색상 세그먼트 커스터마이즈 -->
  * <GaugeChart
  *   :value="35"
- *   :segments="[[0.5,'#ef4444'], [1.0,'#22c55e']]"
+ *   :segments="[[0.5,'#E02D2D'], [1.0,'#22c55e']]"
  * />
  *
  * <!-- 두께와 각도 변경 -->
@@ -68,7 +68,7 @@ const props = defineProps({
   segments: {
     type: Array,
     default: () => [
-      [0.2, '#ef4444'], [0.4, '#f97316'], [0.6, '#facc15'],
+      [0.2, '#E02D2D'], [0.4, '#f97316'], [0.6, '#facc15'],
       [0.8, '#22c55e'], [1.0, '#16a34a']
     ]
   },

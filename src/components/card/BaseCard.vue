@@ -139,10 +139,10 @@ const finalRel = computed(() => {
 
 <style scoped>
 .base-card {
-  --bg: #fff;
-  --fg: #111827;
-  --bd: #cfd4dc;
-  --ring: #3b82f633;
+  --bg: var(--card-bg);
+  --fg: var(--brand-sub);
+  --bd: rgba(0,0,0,0.06);
+  --ring: rgba(45,114,237,0.12);
   --shadow: 0 1px 2px rgba(0, 0, 0, .06), 0 1px 1px rgba(0, 0, 0, .04);
 
   background: var(--bg);
@@ -161,7 +161,7 @@ const finalRel = computed(() => {
 
 /* Variants */
 .v-elevated { box-shadow: var(--shadow); border-color: transparent; }
-.v-soft { background: #f8fafc; border-color: #e5e7eb; }
+.v-soft { background: var(--bg); border-color: rgba(0,0,0,0.06); }
 .v-ghost { background: transparent; border-color: transparent; }
 
 /* Padding */

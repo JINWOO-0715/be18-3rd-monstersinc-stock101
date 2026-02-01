@@ -9,6 +9,8 @@ import Main from '@/pages/main.vue'
 import Stock_detail from '@/pages/stock_detail.vue'
 import CommunityFeedView from '@/views/CommunityFeedView.vue'
 import CommunityPostDetailView from '@/views/CommunityPostDetailView.vue'
+import ReportDetail from '@/pages/report_detail.vue'
+import AdminStockPage from '@/pages/AdminStockPage.vue'
 
 import StockCommunityView from '@/views/StockCommunityView.vue'
 
@@ -60,6 +62,18 @@ const router = createRouter({
       name: 'CommunityPostDetail',
       component: CommunityPostDetailView,
       props: true,
+    },
+    {
+      path: '/report/:id',
+      name: 'reportDetail',
+      component: ReportDetail,
+      props: true,
+    },
+    {
+      path: '/admin/stock',
+      name: 'AdminStock',
+      component: AdminStockPage,
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
   ],
 })

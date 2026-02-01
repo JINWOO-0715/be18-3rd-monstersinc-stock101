@@ -122,8 +122,8 @@ const cardClass = computed(() => {
 }
 
 .prediction-summary--failure {
-  border-color: rgba(239, 68, 68, 0.3);
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.02) 0%, #fff 100%);
+  border-color: rgba(224, 45, 45, 0.28);
+  background: linear-gradient(135deg, rgba(224, 45, 45, 0.02) 0%, #fff 100%);
 }
 
 .prediction-summary--pending {
@@ -146,7 +146,7 @@ const cardClass = computed(() => {
 }
 
 .prediction-summary__status-indicator--failure {
-  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(180deg, var(--brand-main) 0%, #c41f1f 100%);
 }
 
 .prediction-summary__status-indicator--pending {
@@ -224,9 +224,9 @@ const cardClass = computed(() => {
 }
 
 .prediction-summary__direction-badge--down {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
-  color: #dc2626;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: linear-gradient(135deg, rgba(224, 45, 45, 0.15) 0%, rgba(224, 45, 45, 0.08) 100%);
+  color: var(--brand-main);
+  border: 1px solid rgba(224, 45, 45, 0.18);
 }
 
 /* Result badge styles */
@@ -248,9 +248,9 @@ const cardClass = computed(() => {
 }
 
 .prediction-summary__result-badge--failure {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--brand-main) 0%, #c41f1f 100%);
   color: white;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 4px rgba(224, 45, 45, 0.28);
 }
 
 .prediction-summary__result-badge--pending {

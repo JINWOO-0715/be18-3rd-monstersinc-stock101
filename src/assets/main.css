@@ -1,17 +1,40 @@
 :root {
   font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #111827;
-  background-color: #f5f6f8;
+  color: #1A2C42; /* default text color -> Deep Navy */
+  background-color: #F5F7FA; /* Light Gray */
+  --card-radius: 16px;
+  --bg: #F5F7FA;
+  --card-bg: #F5F7FA;
+  --index-bg: #F5F7FA;
+}
+
+/* Brand colors (global tokens) */
+:root {
+  --brand-main: #E02D2D; /* Point Red (상승) */
+  --brand-sub: #1A2C42;  /* Deep Navy (신뢰와 분석) */
+  --brand-neutral: #FFFFFF; /* White */
+  --brand-deep-blue: #2D72ED; /* Deep Blue (하락) */
 }
 
 body {
   margin: 0;
-  background-color: #f5f6f8;
+  background-color: var(--bg);
 }
 
 * {
   box-sizing: border-box;
 }
+
+/* Search icon within .search-container for consistent UI */
+.search-container {
+  position: relative;
+}
+.search-container .search-icon{ position:absolute; left:14px; top:50%; transform:translateY(-50%); pointer-events:none }
+.search-container .main-search{ padding-left:40px }
+
+/* Global search button hover & transition */
+.search-btn{ transition: background-color 180ms ease, transform 120ms ease }
+.search-btn:hover{ transform: translateY(-2px); filter:brightness(0.96) }
 
 a {
   color: inherit;

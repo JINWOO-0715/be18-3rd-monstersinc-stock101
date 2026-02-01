@@ -71,9 +71,9 @@ const cards = computed(() => [
   justify-content: center;
   gap: 6px;
   padding: 20px 12px;
-  border: 1px solid #e6e8ec;
+  border: 1px solid rgba(0,0,0,0.06);
   border-radius: 16px;
-  background-color: #fff;
+  background-color: var(--card-bg);
   text-align: center;
   box-shadow: 0 3px 8px rgba(15, 23, 42, 0.04);
   transition: all 0.2s ease;
@@ -86,17 +86,17 @@ const cards = computed(() => [
 .profile-stats__card--clickable:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
-  border-color: #3b82f6;
+  border-color: var(--brand-deep-blue);
 }
 
 .profile-stats__card--active {
-  border-color: #3b82f6;
+  border-color: var(--brand-deep-blue);
   background-color: #eff6ff;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(45, 114, 237, 0.1);
 }
 
 .profile-stats__card--active .profile-stats__label {
-  color: #3b82f6;
+  color: var(--brand-deep-blue);
 }
 
 .profile-stats__label {
@@ -115,10 +115,10 @@ const cards = computed(() => [
 }
 
 .profile-stats__value.accent-negative {
-  color: #ef4444;
+  color: var(--brand-main);
 }
 
 .profile-stats__value.accent-info {
-  color: #2563eb;
+  color: var(--brand-deep-blue);
 }
 </style>

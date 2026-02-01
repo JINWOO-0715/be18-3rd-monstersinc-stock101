@@ -93,8 +93,8 @@ const badgeClass = computed(() => {
 }
 
 .prediction-card__badge--negative {
-  background-color: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
+  background-color: rgba(224, 45, 45, 0.12);
+  color: var(--brand-main);
 }
 
 .prediction-card__badge--neutral {

@@ -67,6 +67,6 @@ defineEmits(['update:modelValue'])
   width: 100%;
   height: 3px;
   border-radius: 999px;
-  background-color: #2563eb;
+  background-color: var(--brand-deep-blue);
 }
 </style>

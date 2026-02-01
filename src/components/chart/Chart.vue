@@ -134,7 +134,7 @@ export default {
           tooltip: { enabled: true },
           labels: {
             formatter(val) {
-              return typeof val === 'number' ? `${val.toFixed(2)} USD` : ''
+              return typeof val === 'number' ? `${val.toLocaleString()} 원` : ''
             },
             style: { colors: '#425b8f', fontWeight: 500 },
             offsetX: -6
@@ -146,7 +146,7 @@ export default {
           x: { format: 'MMM dd, HH:mm' },
           y: {
             formatter(val) {
-              return typeof val === 'number' ? `${val.toFixed(2)} USD` : ''
+              return typeof val === 'number' ? `${val.toLocaleString()} 원` : ''
             }
           }
         },
@@ -187,6 +187,7 @@ export default {
   },
   beforeUnmount() {
     this.clearRefreshTimer()
+    this.closeWebSocket()
   },
   watch: {
     ticker() {
@@ -196,11 +197,67 @@ export default {
   methods: {
     async bootstrapChart() {
       this.clearRefreshTimer()
+      this.closeWebSocket()
       const loaded = await this.loadHistoricalData(this.activeTicker)
       if (!loaded) {
         this.seedDummyData()
       }
       this.scheduleRefresh()
+      this.connectWebSocket()
+    },
+    connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const host = 'localhost:8080' // 백엔드 주소 (필요시 환경변수화)
+      this.ws = new WebSocket(`${protocol}//${host}/ws/stock`)
+
+      this.ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'PRICE_UPDATE' && data.ticker.includes(this.activeTicker)) {
+            this.handleRealTimeUpdate(data)
+          }
+        } catch (e) {
+          console.error('Failed to parse WS message', e)
+        }
+      }
+
+      this.ws.onclose = () => {
+        console.log('WS connection closed')
+      }
+    },
+    closeWebSocket() {
+      if (this.ws) {
+        this.ws.close()
+        this.ws = null
+      }
+    },
+    handleRealTimeUpdate(update) {
+      const price = Number(update.price)
+      if (Number.isNaN(price)) return
+
+      const now = Date.now()
+      const currentData = [...this.series[0].data]
+      
+      if (currentData.length > 0) {
+        const lastCandle = currentData[currentData.length - 1]
+        const interval = 60 * 1000 // 1분 차트 기준
+        
+        if (now - lastCandle.x < interval) {
+          // 같은 시간 봉 업데이트
+          lastCandle.y[1] = Math.max(lastCandle.y[1], price)
+          lastCandle.y[2] = Math.min(lastCandle.y[2], price)
+          lastCandle.y[3] = price
+        } else {
+          // 새로운 봉 추가
+          const newCandle = {
+            x: now,
+            y: [price, price, price, price]
+          }
+          currentData.push(newCandle)
+          if (currentData.length > this.maxPoints) currentData.shift()
+        }
+        this.series = [{ data: currentData }]
+      }
     },
     async refreshOnce() {
       await this.loadHistoricalData(this.activeTicker)
