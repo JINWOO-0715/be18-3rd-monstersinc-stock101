@@ -27,7 +27,6 @@ export const getReportsByStockId = async (stockId: number | string): Promise<Rep
   try {
     const response = await apiClient.get(`/api/disclosure/reports/stock/${stockId}`)
     const data = response.data
-    console.log('📄 리포트 목록 조회 성공:', data)
 
     // 백엔드 응답이 배열인 경우와 객체인 경우 모두 처리
     const items = Array.isArray(data) ? data : (data.items || [])
@@ -48,7 +47,6 @@ export const getReportsByStockId = async (stockId: number | string): Promise<Rep
       }))
     }
   } catch (error) {
-    console.error('❌ 리포트 목록 조회 실패:', error)
     throw error
   }
 }

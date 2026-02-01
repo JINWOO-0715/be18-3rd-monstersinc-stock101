@@ -150,8 +150,6 @@ const activeTab = ref('analysis')
 const stockInfo = ref<StockSummaryInfo | null>(null)
 const uploadedPdfUrl = ref(null)
 const disclosuresList = ref<DartReportResponse | null>(null)
-const individualData = ref(null)
-const analystData = ref(null)
 const relatedReports = ref<ReportsResponse | null>(null)
 
 // 관련 리포트 상위 3개만
@@ -180,7 +178,7 @@ onMounted(async () => {
       relatedReports.value = reports;
     }
   } catch (error) {
-    console.error('❌ Failed to load stock', error)
+    // Error loading stock data
   }
   
 });
@@ -243,31 +241,29 @@ const indicatorPills = computed(() => []) // To be implemented with original log
 
 
 
-const getIndicators = async (id) => {
-  if (!id) return
-  try {
-    const [indRes, anaRes] = await Promise.all([
-      axios.get(`/api/v1/indicator-service/individual-indicator?stockId=${id}`),
-      axios.get(`/api/v1/indicator-service/analyst-indicator?stockId=${id}`)
-    ])
-    individualData.value = indRes.data?.items?.[0] || indRes.data?.item
-    analystData.value = anaRes.data?.items?.[0] || anaRes.data?.item
-  } catch (error) {
-    // Silent error
-  }
-}
 
 
 
 watch(() => route.params.stockId, async (next) => {
   if (next) {
     stockId.value = next
-    await loadStock(next)
-    await Promise.all([
-      getfinance(next),
-      getIndicators(next),
-      loadDartDisclosures(next)
-    ])
+    const id = Array.isArray(stockId.value) ? stockId.value[0] : stockId.value;
+    if (!id) return;
+    try{
+      stockInfo.value = await getStockSummaryInfo(id);
+
+      if (stockInfo.value && stockInfo.value.stockCode) {
+        const [disclosures, reports] = await Promise.all([
+          DartReportgetDartReports(stockInfo.value.stockCode),
+          getReportsByStockId(id)
+        ]);
+
+        disclosuresList.value = disclosures;
+        relatedReports.value = reports;
+      }
+    } catch (error) {
+      // Error loading stock data
+    }
   }
 })
 </script>

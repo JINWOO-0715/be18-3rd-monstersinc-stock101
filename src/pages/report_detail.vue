@@ -216,7 +216,6 @@ const fetchReport = async () => {
     loading.value = true
     error.value = ''
     const { data } = await apiClient.get(`/api/disclosure/reports/${reportId}`)
-    console.log('📄 리포트 상세 조회:', data)
 
     const report = data.items ? data.items[0] : data
 
