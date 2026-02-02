@@ -1,11 +1,16 @@
 import apiClient from '@/api';
 
-export const PDFUpload = async (file: File) => {
+export const PDFUpload = async (file: File, userId: number | null, stockId: number | string) => {
     try {
         const formData = new FormData();
         formData.append('file', file);
+        console.log('📤 업로드 중...', { userId, stockId });
 
         const response = await apiClient.post('/api/disclosure/upload', formData, {
+            params: {
+                userId,
+                stockId
+            },
             headers: {
                 'Content-Type': 'multipart/form-data'
             },

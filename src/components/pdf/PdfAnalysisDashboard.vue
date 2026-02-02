@@ -119,7 +119,7 @@ const handleUpload = async (event) => {
   loading.value = true
   try {
     const userId = auth.userInfo?.userId || null
-    const uploadRes = await PDFUpload(file, userId)
+    const uploadRes = await PDFUpload(file, userId, props.stockId)
     alert(uploadRes?.message || '업로드가 완료되었습니다.')
     if (uploadRes?.analysis) analysisResult.value = uploadRes.analysis
   } catch (error) {
