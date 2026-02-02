@@ -55,8 +55,8 @@
                   <tbody>
                     <tr v-for="(row, idx) in metricsRows" :key="idx">
                       <td class="metric-name">{{ row.item }}</td>
-                      <td class="metric-value">{{ row.current }}</td>
-                      <td class="metric-value">{{ row.previous }}</td>
+                      <td class="metric-value">{{ formatMetricAmount(row.current) }}</td>
+                      <td class="metric-value">{{ formatMetricAmount(row.previous) }}</td>
                       <td :class="varianceClass(row.variance)">
                         {{ formatVariance(row.variance) }}
                       </td>
@@ -124,6 +124,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import apiClient from '@/api'
+import { formatMetricAmount } from '@/utils/formatAmount'
 
 // Import new components
 import ReportHeader from '@/components/report/ReportHeader.vue'

@@ -15,10 +15,17 @@
 
       <h1 class="report-title">{{ title }}</h1>
 
-      <div class="stock-info">
+      <div v-if="stockName && ticker" class="stock-info">
         <span class="stock-label">대상 종목:</span>
         <router-link :to="`/stock/${stockId}`" class="stock-link">
           {{ stockName }} ({{ ticker }})
+          <span class="link-icon">↗</span>
+        </router-link>
+      </div>
+      <div v-else-if="stockId" class="stock-info">
+        <span class="stock-label">대상 종목:</span>
+        <router-link :to="`/stock/${stockId}`" class="stock-link">
+          바로가기
           <span class="link-icon">↗</span>
         </router-link>
       </div>

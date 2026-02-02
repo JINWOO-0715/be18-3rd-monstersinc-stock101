@@ -56,18 +56,6 @@
       </BaseGrid>
     </section>
 
-    <!-- 4. 지금 주목 받는 주식 -->
-    <section class="sec">
-      <h2 class="sec__title">지금 주목 받는 주식</h2>
-      <div class="hot-stocks">
-        <div class="hot-stocks__track">
-          <StatCard v-for="item in hotStocks" :key="item.id" class="hot-stocks__card" :title="item.symbol"
-            :subtitle="item.name" :value="item.price" locale="ko-KR" :currency="item.currency || 'KRW'" :change="item.change"
-            :percentMode="true" :clickable="true" :metricSize="'lg'" @click="goStock(item.id)" />
-        </div>
-      </div>
-    </section>
-
   </section>
 </template>
 
@@ -77,8 +65,6 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
 import BaseGrid from '@/components/grid/BaseGrid.vue'
-import StatCard from '@/components/card/variants/StatCard.vue'
-import NewsCard from '@/components/card/variants/NewsCard.vue'
 import AnalysisReportCard from '@/components/card/variants/AnalysisReportCard.vue'
 import BaseButton from '@/components/button/BaseButton.vue'
 import axios from 'axios'
@@ -88,7 +74,6 @@ const authStore = useAuthStore()
 const searchQuery = ref('')
 const showDropdown = ref(false)
 const allStocks = ref([])
-const hotStocks = ref([])
 const isComposing = ref(false)
 const dropdownRef = ref(null)
 const suggestionListRef = ref(null)
@@ -164,43 +149,9 @@ const extractSource = (url) => {
   }
 }
 
-const indices = ref([])
-const latestReports = ref([
-  {
-    id: 1,
-    stockId: 1,
-    title: '삼성전자 반기보고서 분석',
-    summary: '영업이익 20% 상승, 부채비율 감소 등 재무 건전성 강화 확인',
-    image: 'https://picsum.photos/seed/samsung/300/200',
-    date: '2024.08.24',
-    author: 'AI Analyst',
-    tag: '반기보고서'
-  },
-  {
-    id: 2,
-    stockId: 2,
-    title: '현대차 미래 전략 분석',
-    summary: '신규 전기차 라인업 확대 및 생산 자동화로 수익성 개선 전망',
-    image: 'https://picsum.photos/seed/hyundai/300/200',
-    date: '2024.08.23',
-    author: 'AI Analyst',
-    tag: '경영계획'
-  }
-])
-
-const fallbackStocks = [
-  { id: 'stk1', symbol: 'NVDA', name: 'NVIDIA Corp.', price: 120.34, change: 2.45, marketName: 'NASDAQ', currency: 'USD' },
-  { id: 'stk2', symbol: 'TSLA', name: 'Tesla Inc.', price: 215.12, change: -1.18, marketName: 'NASDAQ', currency: 'USD' },
-]
+const latestReports = ref([])
 
 onMounted(async () => {
-  // 시장 지수 데이터 (KOSPI, KOSDAQ)
-  // TODO: 백엔드 실시간 시장 지수 API 구현 시 연동
-  indices.value = [
-    { id: 'kospi', title: 'KOSPI', value: 2567.89, change: 1.23 },
-    { id: 'kosdaq', title: 'KOSDAQ', value: 834.56, change: -0.89 },
-  ]
-
   // 전체 주식 데이터 로드 (한 번만 호출)
   try {
     const { data } = await axios.get('/api/v1/stock')
@@ -216,14 +167,14 @@ onMounted(async () => {
     }))
 
     allStocks.value = mapped
-    hotStocks.value = mapped.length > 0 ? mapped.slice(0, 10) : fallbackStocks.map(s => ({ ...s }))
   } catch (error) {
     console.error('전체 주식 데이터를 불러오지 못했어요', error)
-    
+
     // fallback: /api/v1/stock에서 로드 시도
     try {
       const { data } = await axios.get('/api/v1/stock')
       const items = Array.isArray(data?.items) ? data.items : []
+      console.log('Fallback 주식 데이터 로드 성공:', items)
       const mapped = items.map((item) => ({
         id: item.stockId,
         symbol: item.stockCode || item.name,
@@ -234,11 +185,30 @@ onMounted(async () => {
         currency: item.currency || 'KRW'
       }))
       allStocks.value = mapped
-      hotStocks.value = mapped.length > 0 ? mapped.slice(0, 10) : fallbackStocks.map(s => ({ ...s }))
     } catch (fallbackError) {
       console.error('Fallback 주식 데이터 로드 실패:', fallbackError)
-      hotStocks.value = fallbackStocks.map((item) => ({ ...item }))
+      allStocks.value = []
     }
+  }
+
+  // 최신 분석 리포트 데이터 로드
+  try {
+    const { data } = await axios.get('/api/disclosure/reports/recent')
+    if (Array.isArray(data)) {
+      latestReports.value = data.map((item) => ({
+        id: item.reportId || item.id,
+        stockId: item.stockId,
+        title: item.title,
+        summary: item.summary || item.content,
+        image: item.imageUrl || item.image || 'https://picsum.photos/seed/report/300/200',
+        date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR').replace(/\. /g, '.').replace(/\.$/, '') : '',
+        author: item.author || 'AI Analyst',
+        tag: item.reportType || item.tag || '분석 리포트'
+      }))
+    }
+  } catch (error) {
+    console.error('최신 분석 리포트 데이터 로드 실패:', error)
+    latestReports.value = []
   }
 })
 
@@ -496,25 +466,5 @@ onMounted(async () => {
   font-size: 14px;
   color: #6b7280;
   text-decoration: none;
-}
-
-.hot-stocks {
-  overflow: hidden;
-}
-
-.hot-stocks__track {
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  padding: 4px;
-}
-
-.hot-stocks__card {
-  flex: 0 0 240px;
-}
-
-.news-col {
-  display: grid;
-  gap: 12px;
 }
 </style>

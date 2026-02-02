@@ -12,7 +12,7 @@
       >
         <div class="metric-label">{{ metric.item }}</div>
         <div class="metric-main">
-          <div class="metric-current">{{ metric.current }}</div>
+          <div class="metric-current">{{ formatMetricAmount(metric.current) }}</div>
           <div class="metric-change" :class="getVarianceClass(metric.variance)">
             <span class="change-icon">{{ getChangeIcon(metric.variance) }}</span>
             <span class="change-value">{{ formatVariance(metric.variance) }}</span>
@@ -20,7 +20,7 @@
         </div>
         <div class="metric-comparison">
           <span class="comparison-label">전기:</span>
-          <span class="comparison-value">{{ metric.previous }}</span>
+          <span class="comparison-value">{{ formatMetricAmount(metric.previous) }}</span>
         </div>
       </div>
     </div>
@@ -29,6 +29,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { formatMetricAmount } from '@/utils/formatAmount'
 
 const props = defineProps({
   metrics: {

@@ -36,9 +36,6 @@
     <nav class="header-right">
       <div class="nav-links">
         <router-link to="/" class="nav-link">홈</router-link>
-        <router-link to="/markets" class="nav-link">마켓</router-link>
-        <router-link to="/community" class="nav-link">커뮤니티</router-link>
-        <router-link to="/reports" class="nav-link">리포트</router-link>
       </div>
 
       <div class="nav-separator" aria-hidden>│</div>
@@ -86,21 +83,6 @@
       </div>
     </nav>
   </header>
-
-  <div v-if="indices.length && isMainRoute" class="indices-card">
-    <div class="indices-inner">
-      <div class="indices-left">실시간 지수</div>
-      <div class="indices-track">
-        <div v-for="item in indices" :key="item.id" class="ticker-item">
-          <span class="ticker-item__title">{{ item.title }}</span>
-          <span class="ticker-item__value">{{ item.value.toLocaleString() }}</span>
-          <span class="ticker-item__change">
-            <span :class="['pill', item.change >= 0 ? 'pos' : 'neg']">{{ item.change >= 0 ? '▲' : '▼' }} {{ Math.abs(item.change) }}%</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script setup>
@@ -175,20 +157,6 @@ const goProfile = () => {
 const showOnScroll = ref(false)
 const isMainRoute = computed(() => route.name === 'main')
 const showHeaderSearch = computed(() => !isMainRoute.value || showOnScroll.value)
-
-// 시장 지수(헤더에 표시)
-const indices = ref([])
-
-const fetchIndices = async () => {
-  try {
-    const { data } = await axios.get('/api/v1/rest-client/market-indices')
-    if (data && Array.isArray(data) && data.length > 0) {
-      indices.value = data.map(item => ({ id: item.indexCode, title: item.indexName, value: parseFloat(item.currentPrice) || 0, change: parseFloat(item.changeRate) || 0 }))
-    }
-  } catch (err) {
-    indices.value = [ { id: 'kospi', title: 'KOSPI', value: 2567.89, change: 1.23 }, { id: 'kosdaq', title: 'KOSDAQ', value: 834.56, change: -0.89 } ]
-  }
-}
 
 const fetchStocks = async () => {
   try {
@@ -383,7 +351,6 @@ watch(() => auth.isLoggedIn, (loggedIn) => {
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll)
-  fetchIndices()
   fetchStocks()
   onScroll()
   document.addEventListener('click', onDocClick)
@@ -476,26 +443,6 @@ onUnmounted(() => {
 .notif-delete-btn { background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1; flex-shrink: 0 }
 .notif-delete-btn:hover { color: #ef4444; background: #fef2f2 }
 .notif-empty { padding: 12px; color: #6b7280; text-align:center }
-
-.indices-card {
-  background: var(--index-bg);
-  border-radius: 12px;
-  padding: 8px 14px;
-  display:flex;
-  align-items:center;
-  margin: 0 auto 8px;
-  max-width:1200px;
-  border-bottom: 1px solid rgba(0,0,0,0.04);
-}
-.indices-inner{ display:flex; align-items:center; justify-content:space-between; width:100%; }
-.indices-left{ color:var(--brand-sub); font-weight:700; margin-right:16px }
-.indices-track{ display:flex; gap:18px; align-items:center; overflow:hidden }
-.ticker-item{ display:flex; align-items:center; gap:8px; font-weight:700; color:var(--brand-sub) }
-.ticker-item__title{ color:#6b7280; font-weight:700 }
-.ticker-item__value{ color:var(--brand-sub); margin-left:6px }
-.pill{ display:inline-block; padding:6px 8px; border-radius:999px; font-weight:700; color:white; font-size:13px }
-.pill.pos{ background: var(--brand-main) }
-.pill.neg{ background: var(--brand-deep-blue) }
 
 @media (max-width: 768px) {
   .search-form { width: 100% }
