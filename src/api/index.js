@@ -4,7 +4,7 @@ import router from "@/router";
 
 const apiClient = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
-    timeout: 2000,
+    timeout: 10000,
     withCredentials: true
 })
 
@@ -36,8 +36,9 @@ apiClient.interceptors.response.use(
 
             try {
                 const authStore = useAuthStore();
+                const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
                 const refreshResponse = await axios.post(
-                    'http://localhost:8080/api/v1/auth/refresh',
+                    `${baseURL}/api/v1/auth/refresh`,
                     null,
                     { withCredentials: true }
                 );
