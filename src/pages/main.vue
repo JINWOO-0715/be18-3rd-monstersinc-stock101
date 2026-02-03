@@ -50,8 +50,16 @@
       </div>
       <BaseGrid :items="latestReports" :cols="4" gap="20px" itemKey="id">
         <template #default="{ item }">
-          <AnalysisReportCard :title="item.title" :summary="item.summary" :image="item.image" :date="item.date"
-            :author="item.author" :tag="item.tag" @click="goReport(item.id)" />
+          <AnalysisReportCard
+            :title="item.title"
+            :summary="item.summary"
+            :date="item.date"
+            :author="item.author"
+            :tag="item.tag"
+            :companyName= "item.companyName"
+            :stockCode="item.stockId"
+            @click="goReport(item.id)"
+          />
         </template>
       </BaseGrid>
     </section>
@@ -195,16 +203,22 @@ onMounted(async () => {
   try {
     const { data } = await axios.get('/api/disclosure/reports/recent')
     if (Array.isArray(data)) {
-      latestReports.value = data.map((item) => ({
+      latestReports.value = data.map((item) => {
+        // stockId로 종목 정보 찾기
+        const stock = allStocks.value.find(s => s.id === item.stockId)
+
+        return {
         id: item.reportId || item.id,
         stockId: item.stockId,
+        companyName: item.companyName || stock?.name || '종목맨',
+        stockCode: item.stockCode || item.ticker || stock?.symbol || '',
         title: item.title,
         summary: item.summary || item.content,
-        image: item.imageUrl || item.image || 'https://picsum.photos/seed/report/300/200',
         date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR').replace(/\. /g, '.').replace(/\.$/, '') : '',
         author: item.author || 'AI Analyst',
         tag: item.reportType || item.tag || '분석 리포트'
-      }))
+        }
+      })
     }
   } catch (error) {
     console.error('최신 분석 리포트 데이터 로드 실패:', error)
