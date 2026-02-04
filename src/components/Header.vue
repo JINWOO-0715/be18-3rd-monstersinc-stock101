@@ -89,8 +89,8 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
-import axios from 'axios'
 import BaseButton from '@/components/button/BaseButton.vue'
+import { getAllStocks } from '@/api/stockSerivce'
 import notificationSSE, {
   fetchNotifications as fetchNotificationsAPI,
   fetchUnreadCount as fetchUnreadCountAPI,
@@ -165,15 +165,7 @@ const showHeaderSearch = computed(() => !isMainRoute.value || showOnScroll.value
 
 const fetchStocks = async () => {
   try {
-    const { data } = await axios.get('/api/v1/stock')
-    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : []
-    const mapped = items.map((item) => ({
-      id: item.stockId || item.id || item.symbol,
-      symbol: item.stockCode || item.symbol || item.name,
-      name: item.name || item.stockName || item.symbol,
-      marketName: item.marketName || 'KOSPI'
-    }))
-    allStocks.value = mapped
+    allStocks.value = await getAllStocks()
   } catch (e) {
     console.error('전체 주식 데이터 로드 실패', e)
     allStocks.value = []
