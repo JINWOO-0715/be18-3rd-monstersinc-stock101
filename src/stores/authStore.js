@@ -29,9 +29,7 @@ export const useAuthStore = defineStore('auth', () => {
     const login = async (email, password, stayloggedin) => {
         try {
             const response = await apiClient.post('/api/v1/auth/login', { email, password });
-            console.log('Login response:', response.data);
             const data = response.data.items[0];
-            console.log('Login data:', data);
 
             Object.assign(userInfo, {
                 accessToken: data.accessToken,

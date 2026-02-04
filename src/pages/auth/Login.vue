@@ -58,7 +58,8 @@ async function submitLogin() {
     const result = await authStore.login(email.value, password.value, stayLoggedIn.value);
 
     if (result.success) {
-        router.push('/');
+        const redirect = router.currentRoute.value.query.redirect || '/';
+        router.push(redirect);
     } else {
         errorMessage.value = result.message;
     }

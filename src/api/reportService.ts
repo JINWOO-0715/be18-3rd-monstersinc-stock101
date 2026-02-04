@@ -12,6 +12,18 @@ export interface ReportSummary {
   ticker?: string
 }
 
+export interface RecentReport {
+  id: number
+  stockId: number
+  companyName: string
+  stockCode: string
+  title: string
+  summary: string
+  date: string
+  author: string
+  tag: string
+}
+
 export interface ReportsResponse {
   message: string
   count: number
@@ -48,6 +60,37 @@ export const getReportsByStockId = async (stockId: number | string): Promise<Rep
     }
   } catch (error) {
     throw error
+  }
+}
+
+/**
+ * 최신 분석 리포트 조회
+ */
+export const getRecentReports = async (): Promise<RecentReport[]> => {
+  try {
+    const { data } = await apiClient.get('/api/disclosure/reports/recent')
+
+    if (!Array.isArray(data)) {
+      console.error('최신 분석 리포트 응답이 배열이 아닙니다:', data)
+      return []
+    }
+
+    return data.map((item: any) => ({
+      id: item.reportId || item.id,
+      stockId: item.stockId,
+      companyName: item.companyName || '종목맨',
+      stockCode: item.stockCode || item.ticker || '',
+      title: item.title,
+      summary: item.summary || item.content,
+      date: item.createdAt
+        ? new Date(item.createdAt).toLocaleDateString('ko-KR').replace(/\. /g, '.').replace(/\.$/, '')
+        : '',
+      author: item.author || 'AI Analyst',
+      tag: item.reportType || item.tag || '분석 리포트'
+    }))
+  } catch (error) {
+    console.error('최신 분석 리포트 데이터 로드 실패:', error)
+    return []
   }
 }
 

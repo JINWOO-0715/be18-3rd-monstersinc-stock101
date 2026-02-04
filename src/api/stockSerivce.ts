@@ -1,6 +1,35 @@
 import axios from 'axios';
 import type { StockPriceResponse , StockSummaryInfo} from '../types/stock';
 
+export interface StockListItem {
+  id: number
+  symbol: string
+  name: string
+  marketName: string
+  currency?: string
+}
+
+/**
+ * 전체 주식 목록 조회
+ */
+export const getAllStocks = async (): Promise<StockListItem[]> => {
+  try {
+    const { data } = await axios.get('/api/v1/stock')
+    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : []
+
+    return items.map((item: any) => ({
+      id: item.stockId,
+      symbol: item.stockCode || item.symbol || item.name,
+      name: item.name,
+      marketName: item.marketName || 'KOSPI',
+      currency: item.currency || (item.marketName && item.marketName.toUpperCase().includes('NASDAQ') ? 'USD' : 'KRW')
+    }))
+  } catch (error) {
+    console.error('전체 주식 데이터 로드 실패:', error)
+    return []
+  }
+}
+
 export const getDailyPrices = async (stockCode: string, day: number): Promise<StockPriceResponse> => {
   const response = await axios.get(`/api/stocks/${stockCode}/prices`,{
     params: { days: day }
@@ -33,7 +62,6 @@ try {
       name: raw.name,
       market: raw.marketType, // 이름 치환
       marketCap: raw.marketCap || 0,
-      faceValue: raw.faceValue || 0
     };
   } catch (error) {
     console.error('❌ 주식 요약 정보 로드 실패:', error);

@@ -56,12 +56,12 @@
               </div>
               <ul class="notif-list">
                 <li v-for="n in recentNotifs" :key="n.id"
-                    :class="['notif-item', n.read ? 'notif-item--read' : 'notif-item--unread']"
+                    :class="['notif-item', n.isRead ? 'notif-item--read' : 'notif-item--unread']"
                     @click="openNotif(n)">
-                  <span v-if="!n.read" class="notif-unread-dot"></span>
+                  <span v-if="!n.isRead" class="notif-unread-dot"></span>
                   <div class="notif-content">
                     <div class="notif-message">{{ n.message }}</div>
-                    <div class="notif-meta">{{ formatTime(n.createdAt) }}</div>
+                    <div class="notif-meta">{{ formatTime(n.receivedAt) }}</div>
                   </div>
                   <button class="notif-delete-btn" @click.stop="deleteNotif(n)" aria-label="삭제">&times;</button>
                 </li>
@@ -90,9 +90,14 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
-import apiClient from '@/api'
 import BaseButton from '@/components/button/BaseButton.vue'
-import notificationSSE from '@/api/notificationService'
+import notificationSSE, {
+  fetchNotifications as fetchNotificationsAPI,
+  fetchUnreadCount as fetchUnreadCountAPI,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification
+} from '@/api/notificationService'
 
 const router = useRouter()
 const route = useRoute()
@@ -185,21 +190,11 @@ const unreadCount = ref(0)
 const recentNotifs = computed(() => notifications.value.slice(0, 5))
 
 const fetchNotifications = async () => {
-  try {
-    const { data } = await apiClient.get('/api/notifications')
-    notifications.value = Array.isArray(data) ? data : []
-  } catch (e) {
-    console.error('알림 목록 조회 실패', e)
-  }
+  notifications.value = await fetchNotificationsAPI()
 }
 
 const fetchUnreadCount = async () => {
-  try {
-    const { data } = await apiClient.get('/api/notifications/unread/count')
-    unreadCount.value = data.count ?? 0
-  } catch (e) {
-    console.error('미읽음 알림 개수 조회 실패', e)
-  }
+  unreadCount.value = await fetchUnreadCountAPI()
 }
 
 const toggleNotif = async () => {
@@ -210,12 +205,10 @@ const closeNotif = () => { showNotif.value = false }
 
 const openNotif = async (n) => {
   if (!n.read) {
-    try {
-      await apiClient.patch(`/api/notifications/${n.id}/read`)
+    const success = await markAsRead(n.id)
+    if (success) {
       n.read = true
       unreadCount.value = Math.max(0, unreadCount.value - 1)
-    } catch (e) {
-      console.error('알림 읽음 처리 실패', e)
     }
   }
   router.push(n.targetUrl || '/')
@@ -223,22 +216,18 @@ const openNotif = async (n) => {
 }
 
 const markAllRead = async () => {
-  try {
-    await apiClient.patch('/api/notifications/read-all')
+  const success = await markAllAsRead()
+  if (success) {
     notifications.value.forEach(n => { n.read = true })
     unreadCount.value = 0
-  } catch (e) {
-    console.error('모두 읽음 처리 실패', e)
   }
 }
 
 const deleteNotif = async (n) => {
-  try {
-    await apiClient.delete(`/api/notifications/${n.id}`)
+  const success = await deleteNotification(n.id)
+  if (success) {
     notifications.value = notifications.value.filter(x => x.id !== n.id)
     if (!n.read) unreadCount.value = Math.max(0, unreadCount.value - 1)
-  } catch (e) {
-    console.error('알림 삭제 실패', e)
   }
 }
 
@@ -263,15 +252,12 @@ const onDocClick = (e) => {
 // SSE 연결 및 이벤트 처리
 const connectSSE = () => {
   if (!auth.isLoggedIn || !auth.userInfo.accessToken) {
-    console.log('⚠️ Not logged in, skipping SSE connection')
     return
   }
 
-  console.log('🔌 Setting up SSE connection...')
 
   // SSE 이벤트 핸들러 등록
   notificationSSE.onNotification((event) => {
-    console.log('📨 SSE event received:', event)
 
     switch (event.type) {
       case 'new':
@@ -279,7 +265,6 @@ const connectSSE = () => {
         if (event.notification) {
           notifications.value.unshift(event.notification)
           unreadCount.value += 1
-          console.log('🔔 New notification added, unread count:', unreadCount.value)
         }
         break
 
@@ -287,7 +272,6 @@ const connectSSE = () => {
         // 미읽음 개수 업데이트
         if (typeof event.count === 'number') {
           unreadCount.value = event.count
-          console.log('🔢 Unread count updated:', unreadCount.value)
         }
         break
 
@@ -311,14 +295,12 @@ const connectSSE = () => {
   })
 
   notificationSSE.onConnected(() => {
-    console.log('✅ SSE connected, fetching initial data...')
     // 연결 성공 시 초기 데이터 로드
     fetchUnreadCount()
     fetchNotifications()
   })
 
   notificationSSE.onError((error) => {
-    console.error('❌ SSE error:', error)
   })
 
   // SSE 연결 시작
@@ -327,7 +309,6 @@ const connectSSE = () => {
 
 // SSE 연결 해제
 const disconnectSSE = () => {
-  console.log('🔌 Disconnecting SSE...')
   notificationSSE.disconnect()
 }
 

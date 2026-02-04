@@ -13,6 +13,7 @@
  */
 
 import { ref, type Ref } from 'vue'
+import apiClient from '@/api'
 
 export interface Notification {
   id: number
@@ -31,8 +32,7 @@ export interface NotificationEvent {
 // ========================================
 // SSE 설정 (백엔드 준비 후 변경)
 // ========================================
-const SSE_ENABLED = false // 🔴 백엔드 SSE 엔드포인트 구현 후 true로 변경
-const SSE_BASE_URL = 'http://localhost:8080' // apiClient와 동일한 baseURL 사용
+const SSE_ENABLED = true // 🔴 백엔드 SSE 엔드포인트 구현 후 true로 변경
 const MAX_RECONNECT_ATTEMPTS = 5 // 최대 재연결 시도 횟수 (초과 시 중단)
 
 class NotificationSSEService {
@@ -56,27 +56,25 @@ class NotificationSSEService {
   connect(accessToken: string) {
     // SSE가 비활성화되어 있으면 연결하지 않음
     if (!SSE_ENABLED) {
-      console.log('ℹ️ SSE is disabled. Enable it in notificationService.ts when backend is ready.')
       return
     }
 
     // 이미 연결되어 있으면 중복 연결 방지
     if (this.eventSource && this.eventSource.readyState !== EventSource.CLOSED) {
-      console.log('⚠️ SSE already connected')
       return
     }
 
     // 재연결 시도 횟수 초과 시 중단
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      console.warn(`⚠️ SSE reconnection limit reached (${MAX_RECONNECT_ATTEMPTS} attempts). Stopping reconnection.`)
       return
     }
 
     this.isManualClose = false
 
     try {
-      // SSE 엔드포인트 (백엔드의 SSE URL)
-      const sseUrl = `${SSE_BASE_URL}/api/notifications/stream?token=${encodeURIComponent(accessToken)}`
+      // SSE 엔드포인트 (백엔드의 SSE URL) - apiClient와 동일한 baseURL 사용
+      const baseURL = apiClient.defaults.baseURL || 'http://localhost:8080'
+      const sseUrl = `${baseURL}/api/notifications/stream?token=${encodeURIComponent(accessToken)}`
 
       console.log(`🔌 Connecting to SSE (attempt ${this.reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS}):`, sseUrl)
       this.eventSource = new EventSource(sseUrl)
@@ -84,7 +82,6 @@ class NotificationSSEService {
 
       // 연결 성공
       this.eventSource.onopen = () => {
-        console.log('✅ SSE connected successfully')
         this.currentDelay = this.reconnectDelay // 재연결 지연 시간 초기화
         this.reconnectAttempts = 0 // 재연결 카운터 리셋
         if (this.onConnectedCallback) {
@@ -136,12 +133,10 @@ class NotificationSSEService {
       this.eventSource.onerror = (error) => {
         // 재연결 시도 횟수가 적을 때만 에러 로그 출력
         if (this.reconnectAttempts < 3) {
-          console.warn('⚠️ SSE connection error')
         }
 
         if (this.eventSource?.readyState === EventSource.CLOSED) {
           if (this.reconnectAttempts < 3) {
-            console.log('🔌 SSE connection closed')
           }
         }
 
@@ -242,5 +237,88 @@ class NotificationSSEService {
 
 // 싱글톤 인스턴스
 export const notificationSSE = new NotificationSSEService()
+
+// ========================================
+// Notification API Functions
+// ========================================
+
+/**
+ * 알림 목록 조회
+ */
+export async function fetchNotifications(): Promise<Notification[]> {
+  try {
+    const { data } = await apiClient.get('/api/notifications')
+    const notifications = data?.items || (Array.isArray(data) ? data : [])
+    const mapped = notifications.map((n: any) => ({
+      id: n.id || n.notificationId,
+      message: n.message || '',
+      targetUrl: n.targetUrl || '/',
+      read: n.read !== undefined ? n.read : (n.isRead !== undefined ? n.isRead : false),
+      createdAt: n.createdAt || n.receivedAt || new Date().toISOString()
+    }))
+    return mapped
+  } catch (e) {
+    console.error('알림 목록 조회 실패', e)
+    return []
+  }
+}
+
+/**
+ * 미읽음 알림 개수 조회
+ */
+export async function fetchUnreadCount(): Promise<number> {
+  try {
+    const { data } = await apiClient.get('/api/notifications/unread/count')
+    // 백엔드 응답이 숫자 직접 반환, { count: n }, { items: [{ count: n }] } 등 다양한 형태 처리
+    if (typeof data === 'number') return data
+    if (data?.count !== undefined) return data.count
+    if (data?.items?.[0]?.count !== undefined) return data.items[0].count
+    return 0
+  } catch (e) {
+    console.error('미읽음 알림 개수 조회 실패', e)
+    return 0
+  }
+}
+
+/**
+ * 알림 읽음 처리
+ * @param notificationId - 알림 ID
+ */
+export async function markAsRead(notificationId: number): Promise<boolean> {
+  try {
+    await apiClient.patch(`/api/notifications/${notificationId}/read`)
+    return true
+  } catch (e) {
+    console.error('알림 읽음 처리 실패', e)
+    return false
+  }
+}
+
+/**
+ * 모든 알림 읽음 처리
+ */
+export async function markAllAsRead(): Promise<boolean> {
+  try {
+    await apiClient.patch('/api/notifications/read-all')
+    return true
+  } catch (e) {
+    console.error('모두 읽음 처리 실패', e)
+    return false
+  }
+}
+
+/**
+ * 알림 삭제
+ * @param notificationId - 알림 ID
+ */
+export async function deleteNotification(notificationId: number): Promise<boolean> {
+  try {
+    await apiClient.delete(`/api/notifications/${notificationId}`)
+    return true
+  } catch (e) {
+    console.error('알림 삭제 실패', e)
+    return false
+  }
+}
 
 export default notificationSSE

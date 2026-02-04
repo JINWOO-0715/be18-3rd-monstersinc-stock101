@@ -23,7 +23,6 @@ export interface StockSummaryInfo {
     name: string;         // 종목명
     market: string;       // 시장구분 (KOSPI/KOSDAQ 등) - VO의 marketType 대응
     marketCap: number;    // 시가총액 (억 단위)
-    faceValue: number;    // 액면가
 }
 
 

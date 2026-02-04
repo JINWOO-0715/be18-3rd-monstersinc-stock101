@@ -75,7 +75,8 @@ import { useAuthStore } from '@/stores/authStore'
 import BaseGrid from '@/components/grid/BaseGrid.vue'
 import AnalysisReportCard from '@/components/card/variants/AnalysisReportCard.vue'
 import BaseButton from '@/components/button/BaseButton.vue'
-import axios from 'axios'
+import { getAllStocks } from '@/api/stockSerivce'
+import { getRecentReports } from '@/api/reportService'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -138,6 +139,7 @@ const handleSearch = async () => {
   try {
     // 필터링된 결과에서 첫 번째 항목으로 이동
     if (filteredStocks.value.length > 0) {
+
       goStock(filteredStocks.value[0].id)
       showDropdown.value = false
     } else {
@@ -160,70 +162,21 @@ const extractSource = (url) => {
 const latestReports = ref([])
 
 onMounted(async () => {
-  // 전체 주식 데이터 로드 (한 번만 호출)
-  try {
-    const { data } = await axios.get('/api/v1/stock')
-    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : []
-    const mapped = items.map((item) => ({
-      id: item.stockId,
-      symbol: item.stockCode || item.symbol || item.name,
-      name: item.name,
-      price: item.price,
-      change: item.fluctuation || item.change,
-      marketName: item.marketName || 'KOSPI',
-      currency: item.currency || (item.marketName && item.marketName.toUpperCase().includes('NASDAQ') ? 'USD' : 'KRW')
-    }))
-
-    allStocks.value = mapped
-  } catch (error) {
-    console.error('전체 주식 데이터를 불러오지 못했어요', error)
-
-    // fallback: /api/v1/stock에서 로드 시도
-    try {
-      const { data } = await axios.get('/api/v1/stock')
-      const items = Array.isArray(data?.items) ? data.items : []
-      console.log('Fallback 주식 데이터 로드 성공:', items)
-      const mapped = items.map((item) => ({
-        id: item.stockId,
-        symbol: item.stockCode || item.name,
-        name: item.name,
-        price: item.price,
-        change: item.fluctuation,
-        marketName: 'KOSPI',
-        currency: item.currency || 'KRW'
-      }))
-      allStocks.value = mapped
-    } catch (fallbackError) {
-      console.error('Fallback 주식 데이터 로드 실패:', fallbackError)
-      allStocks.value = []
-    }
-  }
+  // 전체 주식 데이터 로드
+  allStocks.value = await getAllStocks()
 
   // 최신 분석 리포트 데이터 로드
-  try {
-    const { data } = await axios.get('/api/disclosure/reports/recent')
-    if (Array.isArray(data)) {
-      latestReports.value = data.map((item) => {
-        // stockId로 종목 정보 찾기
-        const stock = allStocks.value.find(s => s.id === item.stockId)
+  const reports = await getRecentReports()
 
-        return {
-        id: item.reportId || item.id,
-        stockId: item.stockId,
-        companyName: item.companyName || stock?.name || '종목맨',
-        stockCode: item.stockCode || item.ticker || stock?.symbol || '',
-        title: item.title,
-        summary: item.summary || item.content,
-        date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR').replace(/\. /g, '.').replace(/\.$/, '') : '',
-        author: item.author || 'AI Analyst',
-        tag: item.reportType || item.tag || '분석 리포트'
-        }
-      })
+  // stockId로 종목 정보 매칭
+  latestReports.value = reports.map((report) => {
+    const stock = allStocks.value.find(s => s.id === report.stockId)
+    return {
+      ...report,
+      companyName: report.companyName || stock?.name || '종목맨',
+      stockCode: report.stockCode || stock?.symbol || ''
     }
-  } catch (error) {
-    console.error('최신 분석 리포트 데이터 로드 실패:', error)
-    latestReports.value = []
-  }
+  })
 })
 
 </script>

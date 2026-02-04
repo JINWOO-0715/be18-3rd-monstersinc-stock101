@@ -48,7 +48,6 @@ apiClient.interceptors.response.use(
                 localStorage.setItem('authToken', newAccessToken);
 
                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-                console.log("리프레시 토큰 갱신 성공");
                 return apiClient(originalRequest);
             } catch (refreshError) {
                 console.log("리프레시 토큰 갱신 실패");
